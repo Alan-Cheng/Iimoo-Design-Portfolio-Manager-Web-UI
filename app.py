@@ -23,6 +23,28 @@ def index():
 def git_operations():
     return render_template('index.html')
 
+@app.route('/api/portfolio/upload', methods=['POST'])
+def upload_portfolio():
+    if 'images' not in request.files:
+        return jsonify({'success': False, 'message': '沒有上傳檔案'})
+    
+    files = request.files.getlist('images')
+    images_data = []
+    
+    for file in files:
+        if file and file.filename.lower().endswith('.jpg'):
+            images_data.append(file.read())
+        else:
+            # 如果有非JPG檔案，可以選擇忽略或返回錯誤
+            print(f"忽略非JPG檔案: {file.filename}")
+            # return jsonify({'success': False, 'message': f'只允許上傳JPG檔案，發現: {file.filename}'})
+    
+    if not images_data:
+        return jsonify({'success': False, 'message': '沒有有效的JPG圖片上傳'})
+    
+    success, message = PortfolioManager.create_new_portfolio(images_data)
+    return jsonify({'success': success, 'message': message})
+
 @app.route('/api/git/clone', methods=['POST'])
 def git_clone():
     try:
