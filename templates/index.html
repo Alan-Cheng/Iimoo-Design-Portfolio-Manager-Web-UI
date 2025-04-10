@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Git 操作介面</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
         .operation-section {
             margin-bottom: 2rem;
@@ -17,7 +18,7 @@
             padding: 1rem;
             border-radius: 0.5rem;
             background-color: #e9ecef;
-            display: none;
+            display: none; /* Initially hidden */
         }
         .nav-tabs .nav-link.active {
             font-weight: bold;
@@ -63,7 +64,7 @@
             <h2>Commit 變更</h2>
             <div class="mb-3">
                 <label for="commit-msg" class="form-label">Commit 訊息</label>
-                <input type="text" class="form-control" id="commit-msg">
+                <input type="text" class="form-control" id="commit-msg" required> <!-- Added required -->
             </div>
             <button id="commit-btn" class="btn btn-primary">Commit</button>
             <div class="result-container" id="commit-result"></div>
@@ -78,79 +79,81 @@
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
-        // 设置活动标签样式
-        document.querySelectorAll('.nav-link').forEach(link => {
-            if (link.getAttribute('href') === window.location.pathname) {
-                link.classList.add('active');
-            } else {
-                link.classList.remove('active');
-            }
-        });
-
-        // 原有Git操作脚本保持不变
         document.addEventListener('DOMContentLoaded', function() {
-            const resultArea = document.getElementById('result-area');
-            
-            // Setup button click handlers
+            // Set active tab
+            document.querySelectorAll('.nav-link').forEach(link => {
+                link.classList.toggle('active', link.getAttribute('href') === window.location.pathname);
+            });
+
+            // --- Git Operation Handlers ---
             document.getElementById('clone-btn').addEventListener('click', () => 
-                gitOperation('/api/git/clone', 'POST'));
+                gitOperation('/api/git/clone', 'POST', {}, 'clone-result'));
             
             document.getElementById('pull-btn').addEventListener('click', () => 
-                gitOperation('/api/git/pull', 'POST'));
+                gitOperation('/api/git/pull', 'POST', {}, 'pull-result'));
             
-            document.getElementById('add-btn').addEventListener('click', () => 
-                gitOperation('/api/git/add', 'POST', {
-                    files: document.getElementById('files-input').value
-                }));
+            document.getElementById('add-btn').addEventListener('click', () => {
+                const files = document.getElementById('files-input').value || '.'; // Default to '.' if empty
+                gitOperation('/api/git/add', 'POST', { files: files }, 'add-result');
+            });
             
-            document.getElementById('commit-btn').addEventListener('click', () => 
-                gitOperation('/api/git/commit', 'POST', {
-                    message: document.getElementById('commit-msg').value
-                }));
+            document.getElementById('commit-btn').addEventListener('click', () => {
+                const message = document.getElementById('commit-msg').value;
+                if (!message) { // Basic validation
+                    alert('請輸入Commit訊息');
+                    return;
+                }
+                gitOperation('/api/git/commit', 'POST', { message: message }, 'commit-result');
+            });
             
             document.getElementById('push-btn').addEventListener('click', () => 
-                gitOperation('/api/git/push', 'POST'));
+                gitOperation('/api/git/push', 'POST', {}, 'push-result'));
 
-            async function gitOperation(endpoint, method, data = {}) {
-                const btn = event.target;
+            // --- Helper Functions ---
+            async function gitOperation(endpoint, method, data = {}, resultContainerId) {
+                // Find the button within the correct section based on resultContainerId
+                const sectionId = resultContainerId.replace('-result', '-section');
+                const section = document.getElementById(sectionId);
+                if (!section) return; // Should not happen
+                const btn = section.querySelector('button'); // Assumes one button per section for simplicity
+                if (!btn) return; 
+
                 const originalText = btn.textContent;
+                const resultContainer = document.getElementById(resultContainerId);
                 
                 try {
                     btn.disabled = true;
-                    btn.textContent = '處理中...';
-                    
-                    const response = await fetch(endpoint, {
-                        method,
-                        headers: {
-                            'Content-Type': 'application/json',
-                        },
-                        body: Object.keys(data).length ? JSON.stringify(data) : null
-                    });
+                    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 處理中...'; // Use icon
+                    resultContainer.style.display = 'none'; // Hide previous result
+                    resultContainer.innerHTML = '';
 
+                    const fetchOptions = {
+                        method,
+                        headers: { 'Content-Type': 'application/json' },
+                    };
+                    // Only add body for non-empty data
+                    if (Object.keys(data).length > 0) {
+                        fetchOptions.body = JSON.stringify(data);
+                    }
+                    
+                    const response = await fetch(endpoint, fetchOptions);
                     const result = await response.json();
-                    showResult(result);
+                    showResult(result, resultContainer);
+
                 } catch (error) {
-                    showResult({
-                        success: false,
-                        message: `錯誤: ${error.message}`
-                    });
+                    showResult({ success: false, message: `錯誤: ${error.message}` }, resultContainer);
                 } finally {
                     btn.disabled = false;
-                    btn.textContent = originalText;
+                    btn.innerHTML = originalText; // Restore original button text/HTML
                 }
             }
 
-            function showResult(result) {
-                const containerId = endpoint.includes('clone') ? 'clone-result' :
-                                  endpoint.includes('pull') ? 'pull-result' :
-                                  endpoint.includes('add') ? 'add-result' :
-                                  endpoint.includes('commit') ? 'commit-result' : 'push-result';
-                
-                const container = document.getElementById(containerId);
-                container.style.display = 'block';
+            function showResult(result, container) {
+                if (!container) return;
+                container.style.display = 'block'; // Show the result container
                 container.innerHTML = result.success ? 
-                    `<div class="text-success">✅ ${result.message}</div>` :
-                    `<div class="text-danger">❌ ${result.message}</div>`;
+                    `<div class="alert alert-success mb-0">✅ ${result.message}</div>` : // Use alert styling
+                    `<div class="alert alert-danger mb-0">❌ ${result.message}</div>`;
             }
         });
     </script>
