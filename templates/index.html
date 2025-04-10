@@ -1,63 +1,93 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Git Remote Access</title>
+    <title>Git 操作介面</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <style>
-        .operation-btn {
-            margin: 0.5rem;
-            min-width: 120px;
+        .operation-section {
+            margin-bottom: 2rem;
+            padding: 1.5rem;
+            border-radius: 0.5rem;
+            background-color: #f8f9fa;
         }
         .result-container {
             margin-top: 1rem;
             padding: 1rem;
             border-radius: 0.5rem;
-            background-color: #f8f9fa;
+            background-color: #e9ecef;
+            display: none;
         }
-        .form-text {
-            font-size: 0.875rem;
-            color: #6c757d;
+        .nav-tabs .nav-link.active {
+            font-weight: bold;
         }
     </style>
 </head>
 <body>
     <div class="container py-4">
-        <h1 class="mb-4">Git Remote Access</h1>
-        <h4 class="mb-3">Repository: Alan-Cheng/remote-access-test</h4>
+        <h1 class="mb-4">Git 操作介面</h1>
         
-        <div class="d-flex flex-wrap mb-4">
-            <button id="clone-btn" class="btn btn-primary operation-btn">Clone</button>
-            <button id="pull-btn" class="btn btn-primary operation-btn">Pull</button>
+        <ul class="nav nav-tabs mb-4">
+            <li class="nav-item">
+                <a class="nav-link active" href="/git">Git 操作</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="/">作品集</a>
+            </li>
+        </ul>
+
+        <div class="operation-section" id="clone-section">
+            <h2>Clone 倉庫</h2>
+            <button id="clone-btn" class="btn btn-primary">Clone</button>
+            <div class="result-container" id="clone-result"></div>
         </div>
 
-        <div class="mb-4">
-            <div class="mb-3">
-                <label for="files-input" class="form-label">Files to Add</label>
-                <input type="text" class="form-control" id="files-input" 
-                       placeholder="例如: file.txt 或 folder/ 或 . (全部檔案)">
-                <small class="form-text">
-                    輸入要加入的檔案或目錄，多個項目用空格分隔。<br>
-                    範例: "index.html styles.css" 或 "." (全部檔案) 或 "src/"
-                </small>
-                <button id="add-btn" class="btn btn-primary operation-btn mt-2">Add Files</button>
-            </div>
-
-            <div class="mb-3">
-                <label for="commit-msg" class="form-label">Commit Message</label>
-                <input type="text" class="form-control" id="commit-msg" placeholder="輸入commit訊息">
-                <button id="commit-btn" class="btn btn-primary operation-btn mt-2">Commit</button>
-            </div>
-
-            <button id="push-btn" class="btn btn-primary operation-btn">Push Changes</button>
+        <div class="operation-section" id="pull-section">
+            <h2>Pull 變更</h2>
+            <button id="pull-btn" class="btn btn-primary">Pull</button>
+            <div class="result-container" id="pull-result"></div>
         </div>
 
-        <div class="result-container" id="result-area"></div>
+        <div class="operation-section" id="add-section">
+            <h2>Add 檔案</h2>
+            <div class="mb-3">
+                <label for="files-input" class="form-label">檔案路徑 (預設: 全部檔案)</label>
+                <input type="text" class="form-control" id="files-input" value=".">
+            </div>
+            <button id="add-btn" class="btn btn-primary">Add</button>
+            <div class="result-container" id="add-result"></div>
+        </div>
+
+        <div class="operation-section" id="commit-section">
+            <h2>Commit 變更</h2>
+            <div class="mb-3">
+                <label for="commit-msg" class="form-label">Commit 訊息</label>
+                <input type="text" class="form-control" id="commit-msg">
+            </div>
+            <button id="commit-btn" class="btn btn-primary">Commit</button>
+            <div class="result-container" id="commit-result"></div>
+        </div>
+
+        <div class="operation-section" id="push-section">
+            <h2>Push 變更</h2>
+            <button id="push-btn" class="btn btn-primary">Push</button>
+            <div class="result-container" id="push-result"></div>
+        </div>
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
+        // 设置活动标签样式
+        document.querySelectorAll('.nav-link').forEach(link => {
+            if (link.getAttribute('href') === window.location.pathname) {
+                link.classList.add('active');
+            } else {
+                link.classList.remove('active');
+            }
+        });
+
+        // 原有Git操作脚本保持不变
         document.addEventListener('DOMContentLoaded', function() {
             const resultArea = document.getElementById('result-area');
             
@@ -87,7 +117,7 @@
                 
                 try {
                     btn.disabled = true;
-                    btn.textContent = 'Processing...';
+                    btn.textContent = '處理中...';
                     
                     const response = await fetch(endpoint, {
                         method,
@@ -102,7 +132,7 @@
                 } catch (error) {
                     showResult({
                         success: false,
-                        message: `Error: ${error.message}`
+                        message: `錯誤: ${error.message}`
                     });
                 } finally {
                     btn.disabled = false;
@@ -111,11 +141,16 @@
             }
 
             function showResult(result) {
-                resultArea.innerHTML = `
-                    <div class="alert alert-${result.success ? 'success' : 'danger'}">
-                        ${result.success ? '✅' : '❌'} ${result.message}
-                    </div>
-                `;
+                const containerId = endpoint.includes('clone') ? 'clone-result' :
+                                  endpoint.includes('pull') ? 'pull-result' :
+                                  endpoint.includes('add') ? 'add-result' :
+                                  endpoint.includes('commit') ? 'commit-result' : 'push-result';
+                
+                const container = document.getElementById(containerId);
+                container.style.display = 'block';
+                container.innerHTML = result.success ? 
+                    `<div class="text-success">✅ ${result.message}</div>` :
+                    `<div class="text-danger">❌ ${result.message}</div>`;
             }
         });
     </script>
