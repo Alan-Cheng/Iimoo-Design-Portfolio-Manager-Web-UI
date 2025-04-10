@@ -35,9 +35,7 @@ def upload_portfolio():
         if file and file.filename.lower().endswith('.jpg'):
             images_data.append(file.read())
         else:
-            # 如果有非JPG檔案，可以選擇忽略或返回錯誤
             print(f"忽略非JPG檔案: {file.filename}")
-            # return jsonify({'success': False, 'message': f'只允許上傳JPG檔案，發現: {file.filename}'})
     
     if not images_data:
         return jsonify({'success': False, 'message': '沒有有效的JPG圖片上傳'})
@@ -45,6 +43,18 @@ def upload_portfolio():
     success, message = PortfolioManager.create_new_portfolio(images_data)
     return jsonify({'success': success, 'message': message})
 
+@app.route('/api/portfolio/delete', methods=['POST'])
+def delete_portfolio():
+    data = request.json
+    folder_name = data.get('folder_name')
+    
+    if not folder_name:
+        return jsonify({'success': False, 'message': '缺少作品集資料夾名稱'})
+        
+    success, message = PortfolioManager.delete_portfolio(folder_name)
+    return jsonify({'success': success, 'message': message})
+
+# --- Git Operations API ---
 @app.route('/api/git/clone', methods=['POST'])
 def git_clone():
     try:
@@ -91,6 +101,7 @@ def git_push():
     except Exception as e:
         return jsonify({'success': False, 'message': str(e)})
 
+# --- Portfolio Data API ---
 @app.route('/api/portfolio', methods=['GET'])
 def get_portfolio():
     try:

@@ -12,22 +12,21 @@ class PortfolioManager:
     def load_descriptions() -> Dict[str, Dict]:
         """加载作品集描述信息"""
         descriptions = {}
-        print(f"--- Loading descriptions from: {PortfolioManager.DESCRIPTION_FILE} ---") # Debug
+        # print(f"--- Loading descriptions from: {PortfolioManager.DESCRIPTION_FILE} ---") # Debug
         try:
             with open(PortfolioManager.DESCRIPTION_FILE, 'r', encoding='utf-8') as f:
                 data = json.load(f)
                 for item in data:
                     img_link = item.get("圖片連結", "")
                     if img_link:
-                        # 修正提取逻辑：去除尾部斜杠，然后分割，取最后一个元素
                         folder_key = img_link.strip('/').split('/')[-1]
                         if folder_key and folder_key.startswith('w'):
-                            print(f"  Loaded description for key: {folder_key} (from path: {img_link})") # Debug
+                            # print(f"  Loaded description for key: {folder_key} (from path: {img_link})") # Debug
                             descriptions[folder_key] = item
-                        else:
-                            print(f"  Warning: Could not extract valid folder key '{folder_key}' from path: {img_link}") # Debug
-                    else:
-                        print(f"  Warning: Missing '圖片連結' in item: {item.get('專案名')}") # Debug
+                        # else:
+                            # print(f"  Warning: Could not extract valid folder key '{folder_key}' from path: {img_link}") # Debug
+                    # else:
+                        # print(f"  Warning: Missing '圖片連結' in item: {item.get('專案名')}") # Debug
 
         except FileNotFoundError:
             print(f"  Error: Description file not found: {PortfolioManager.DESCRIPTION_FILE}") # Debug
@@ -35,8 +34,7 @@ class PortfolioManager:
             print(f"  Error: JSON Decode Error in {PortfolioManager.DESCRIPTION_FILE}: {e}") # Debug
         except Exception as e:
             print(f"  Error loading description file: {e}") # Debug
-        print(f"--- Finished loading descriptions. Found {len(descriptions)} entries. ---") # Debug
-        # print(f"Loaded descriptions keys: {list(descriptions.keys())}") # Optional: print all loaded keys
+        # print(f"--- Finished loading descriptions. Found {len(descriptions)} entries. ---") # Debug
         return descriptions
 
     @staticmethod
@@ -46,17 +44,15 @@ class PortfolioManager:
         portfolio_path = os.path.join(PortfolioManager.BASE_DIR, PortfolioManager.PORTFOLIO_DIR)
         descriptions = PortfolioManager.load_descriptions()
         
-        print(f"--- Getting portfolio items from: {portfolio_path} ---") # Debug
+        # print(f"--- Getting portfolio items from: {portfolio_path} ---") # Debug
         if not os.path.exists(portfolio_path):
-            print(f"  Portfolio directory does not exist: {portfolio_path}") # Debug
+            # print(f"  Portfolio directory does not exist: {portfolio_path}") # Debug
             os.makedirs(portfolio_path, exist_ok=True)
             return items
 
         for item_dir in sorted(os.listdir(portfolio_path)):
             dir_path = os.path.join(portfolio_path, item_dir)
-            # print(f"  Processing directory: {item_dir} ({dir_path})") # Debug - Reduced verbosity
             if not os.path.isdir(dir_path) or not item_dir.startswith('w'):
-                # print(f"    Skipping (not a valid portfolio directory).") # Debug - Reduced verbosity
                 continue
 
             images = []
@@ -69,17 +65,15 @@ class PortfolioManager:
                     })
             
             if images:
-                # print(f"    Found {len(images)} images.") # Debug - Reduced verbosity
-                desc_data = descriptions.get(item_dir) # 获取对应的描述信息
-                if desc_data:
-                     print(f"    Found description data for {item_dir}: {desc_data.get('專案名')}") # Debug
-                else:
-                     print(f"    No description data found for {item_dir}.") # Debug
-                     desc_data = {} # Ensure desc_data is a dict even if not found
+                desc_data = descriptions.get(item_dir, {}) # 获取对应的描述信息
+                # if desc_data:
+                     # print(f"    Found description data for {item_dir}: {desc_data.get('專案名')}") # Debug
+                # else:
+                     # print(f"    No description data found for {item_dir}.") # Debug
 
                 items.append({
                     'name': desc_data.get("專案名", f"作品集 {item_dir[1:]}"), 
-                    'folder': item_dir,
+                    'folder': item_dir, # Keep folder name for deletion
                     'images': images,
                     'description': desc_data.get("描述", "").replace('\n', '<br>'), 
                     'area': desc_data.get("區域", ""),
@@ -87,10 +81,8 @@ class PortfolioManager:
                     'size': desc_data.get("坪數", ""),
                     'type': desc_data.get("種類", "")
                 })
-            # else:
-                # print(f"    No images found in {item_dir}.") # Debug - Reduced verbosity
         
-        print(f"--- Finished getting portfolio items. Found {len(items)} items. ---") # Debug
+        # print(f"--- Finished getting portfolio items. Found {len(items)} items. ---") # Debug
         return items
 
     @staticmethod
@@ -125,3 +117,22 @@ class PortfolioManager:
             return True, f"成功创建作品集 {folder_name}"
         except Exception as e:
             return False, str(e)
+
+    @staticmethod
+    def delete_portfolio(folder_name: str) -> Tuple[bool, str]:
+        """删除指定的作品集文件夹"""
+        try:
+            if not folder_name or not folder_name.startswith('w') or not folder_name[1:].isdigit():
+                return False, "无效的作品集文件夹名称"
+
+            portfolio_path = os.path.join(PortfolioManager.BASE_DIR, PortfolioManager.PORTFOLIO_DIR, folder_name)
+            
+            if os.path.exists(portfolio_path) and os.path.isdir(portfolio_path):
+                shutil.rmtree(portfolio_path)
+                print(f"Deleted portfolio folder: {portfolio_path}") # Debug
+                return True, f"成功删除作品集 {folder_name}"
+            else:
+                return False, f"作品集文件夹 {folder_name} 不存在"
+        except Exception as e:
+            print(f"Error deleting portfolio {folder_name}: {e}") # Debug
+            return False, f"删除作品集 {folder_name} 时出错: {e}"
