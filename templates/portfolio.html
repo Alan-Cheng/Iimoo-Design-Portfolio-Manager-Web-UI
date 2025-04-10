@@ -15,13 +15,24 @@
         .portfolio-card .card-text { font-size: 0.9rem; color: #6c757d; margin-bottom: 1rem; flex-grow: 1; }
         .portfolio-card .card-footer { background-color: transparent; border-top: none; padding-top: 0; display: flex; justify-content: space-between; align-items: center; }
         .carousel-item img { height: 400px; object-fit: contain; }
+        .carousel-caption { /* Style for filename caption */
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background-color: rgba(0, 0, 0, 0.5);
+            color: white;
+            padding: 5px 10px;
+            font-size: 0.9em;
+            text-align: center;
+        }
         .carousel-control-prev-icon, .carousel-control-next-icon { background-color: rgba(0,0,0,0.5); border-radius: 50%; padding: 10px; }
         .portfolio-title { font-size: 1.2rem; font-weight: bold; margin-bottom: 0.5rem; }
         .portfolio-details { font-size: 0.8rem; color: #888; margin-bottom: 0.5rem; }
         .nav-tabs .nav-link.active { font-weight: bold; }
         .delete-btn { padding: 0.2rem 0.5rem; font-size: 0.8rem; }
-        #file-list { margin-top: 10px; font-size: 0.9em; max-height: 150px; overflow-y: auto; border: 1px solid #eee; padding: 5px; } /* Style for file list */
-        #file-list span { display: block; margin-bottom: 3px; } /* Style for each file name */
+        #file-list { margin-top: 10px; font-size: 0.9em; max-height: 150px; overflow-y: auto; border: 1px solid #eee; padding: 5px; }
+        #file-list span { display: block; margin-bottom: 3px; }
     </style>
 </head>
 <body>
@@ -46,7 +57,7 @@
                          <div class="col-md-6 mb-3">
                             <label for="image-upload" class="form-label">作品圖片 (多選JPG)*</label>
                             <input class="form-control" type="file" id="image-upload" name="images" accept=".jpg,.jpeg" multiple required>
-                            <div id="file-list"></div> <!-- Div to display selected file names -->
+                            <div id="file-list"></div> 
                         </div>
                     </div>
                     <div class="mb-3">
@@ -54,22 +65,10 @@
                         <textarea class="form-control" id="description" name="description" rows="3"></textarea>
                     </div>
                      <div class="row">
-                        <div class="col-md-3 mb-3">
-                            <label for="area" class="form-label">區域</label>
-                            <input type="text" class="form-control" id="area" name="area">
-                        </div>
-                        <div class="col-md-3 mb-3">
-                            <label for="date" class="form-label">日期 (年)</label>
-                            <input type="number" class="form-control" id="date" name="date" placeholder="例如: 2024">
-                        </div>
-                        <div class="col-md-3 mb-3">
-                            <label for="size" class="form-label">坪數</label>
-                            <input type="number" class="form-control" id="size" name="size">
-                        </div>
-                        <div class="col-md-3 mb-3">
-                            <label for="type" class="form-label">種類</label>
-                            <input type="text" class="form-control" id="type" name="type" placeholder="例如: 住宅空間">
-                        </div>
+                        <div class="col-md-3 mb-3"> <label for="area" class="form-label">區域</label> <input type="text" class="form-control" id="area" name="area"> </div>
+                        <div class="col-md-3 mb-3"> <label for="date" class="form-label">日期 (年)</label> <input type="number" class="form-control" id="date" name="date" placeholder="例如: 2024"> </div>
+                        <div class="col-md-3 mb-3"> <label for="size" class="form-label">坪數</label> <input type="number" class="form-control" id="size" name="size"> </div>
+                        <div class="col-md-3 mb-3"> <label for="type" class="form-label">種類</label> <input type="text" class="form-control" id="type" name="type" placeholder="例如: 住宅空間"> </div>
                     </div>
                     <button type="submit" class="btn btn-primary">上传并创建作品集</button>
                 </form>
@@ -133,12 +132,12 @@
             // Upload form handler
             uploadForm.addEventListener('submit', handleUploadSubmit);
 
-            // File input change handler to display selected files
+            // File input change handler
             imageUploadInput.addEventListener('change', function() {
-                fileListDiv.innerHTML = ''; // Clear previous list
+                fileListDiv.innerHTML = ''; 
                 if (this.files.length > 0) {
                     const list = document.createElement('ul');
-                    list.className = 'list-unstyled mb-0'; // Use Bootstrap class
+                    list.className = 'list-unstyled mb-0'; 
                     for (let i = 0; i < this.files.length; i++) {
                         const listItem = document.createElement('li');
                         listItem.textContent = this.files[i].name;
@@ -155,27 +154,17 @@
                 const form = e.target;
                 const formData = new FormData(form); 
                 const files = imageUploadInput.files;
-                
                 if (files.length === 0) { alert('请至少选择一张JPG图片'); return; }
-
                 const btn = form.querySelector('button[type="submit"]');
                 const resultDiv = document.getElementById('upload-result');
                 btn.disabled = true; btn.textContent = '上传中...'; resultDiv.innerHTML = '';
-                
                 try {
                     const response = await fetch('/api/portfolio/upload', { method: 'POST', body: formData });
                     const result = await response.json();
                     resultDiv.innerHTML = result.success ? `<div class="alert alert-success">${result.message}</div>` : `<div class="alert alert-danger">${result.message}</div>`;
-                    if (result.success) { 
-                        loadPortfolioItems(); 
-                        form.reset(); // Reset the form fields
-                        fileListDiv.innerHTML = ''; // Clear file list on successful upload
-                    }
-                } catch (error) { 
-                    resultDiv.innerHTML = `<div class="alert alert-danger">上传失败: ${error.message}</div>`;
-                } finally { 
-                    btn.disabled = false; btn.textContent = '上传并创建作品集'; 
-                }
+                    if (result.success) { loadPortfolioItems(); form.reset(); fileListDiv.innerHTML = ''; }
+                } catch (error) { resultDiv.innerHTML = `<div class="alert alert-danger">上传失败: ${error.message}</div>`;
+                } finally { btn.disabled = false; btn.textContent = '上传并创建作品集'; }
             }
 
             async function loadPortfolioItems() {
@@ -191,11 +180,9 @@
                 const container = document.getElementById('portfolio-container');
                 container.innerHTML = ''; 
                 if (items.length === 0) { container.innerHTML = '<p>暂无作品集。</p>'; return; }
-
                 items.forEach(item => {
                     const col = document.createElement('div');
                     col.className = 'col-md-4 col-sm-6 d-flex align-items-stretch'; 
-                    
                     const card = document.createElement('div');
                     card.className = 'card portfolio-card';
                     card.innerHTML = `
@@ -212,15 +199,11 @@
                         </div>
                         <div class="card-footer">
                              <button class="btn btn-primary btn-sm view-btn">查看详情</button>
-                             <button class="btn btn-danger btn-sm delete-btn" data-folder="${item.folder}">
-                                 <i class="fas fa-trash-alt"></i> 删除
-                             </button>
+                             <button class="btn btn-danger btn-sm delete-btn" data-folder="${item.folder}"> <i class="fas fa-trash-alt"></i> 删除 </button>
                         </div>
                     `;
-                    
                     card.querySelector('.view-btn').addEventListener('click', () => showPortfolioModal(item));
                     card.querySelector('.delete-btn').addEventListener('click', handleDeleteClick); 
-                    
                     col.appendChild(card);
                     container.appendChild(col);
                 });
@@ -258,12 +241,26 @@
                 modalType.textContent = item.type || 'N/A';
 
                 carouselInner.innerHTML = '';
-                item.images.forEach((image, index) => {
+                // Sort images numerically for modal display as well
+                const sortedImages = item.images.sort((a, b) => {
+                     const numA = parseInt(a.name.split('.')[0]);
+                     const numB = parseInt(b.name.split('.')[0]);
+                     if (!isNaN(numA) && !isNaN(numB)) return numA - numB;
+                     return a.name.localeCompare(b.name); // Fallback sort
+                });
+
+                sortedImages.forEach((image, index) => {
                     const itemDiv = document.createElement('div');
                     itemDiv.className = `carousel-item ${index === 0 ? 'active' : ''}`;
-                    itemDiv.innerHTML = `<img src="${image.path}" class="d-block w-100" alt="${image.name}">`;
+                    itemDiv.innerHTML = `
+                        <img src="${image.path}" class="d-block w-100" alt="${image.name}">
+                        <div class="carousel-caption d-none d-md-block"> 
+                            <p class="mb-0">${image.name}</p> <!-- Display filename -->
+                        </div>
+                    `;
                     carouselInner.appendChild(itemDiv);
                 });
+                
                 modal.show();
             }
         });

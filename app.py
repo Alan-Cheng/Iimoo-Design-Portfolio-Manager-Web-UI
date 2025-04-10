@@ -10,9 +10,8 @@ app = Flask(__name__)
 # 設定靜態檔案路由
 @app.route('/assets/<path:filename>')
 def serve_static(filename):
-    # Serve files directly from the assets directory within the cloned repo
     return send_from_directory(
-        os.path.join(PortfolioManager.BASE_DIR, 'assets'), # Use PortfolioManager.BASE_DIR
+        os.path.join(PortfolioManager.BASE_DIR, 'assets'), 
         filename
     )
 
@@ -30,19 +29,16 @@ def upload_portfolio():
     if 'images' not in request.files:
         return jsonify({'success': False, 'message': '缺少圖片檔案'})
     
-    files = request.files.getlist('images')
-    images_data = []
+    uploaded_files = request.files.getlist('images') # Get FileStorage objects
     
-    for file in files:
-        if file and file.filename.lower().endswith('.jpg'):
-            images_data.append(file.read())
-        else:
-            print(f"忽略非JPG檔案: {file.filename}")
-            # Optionally return error if non-JPG found
-            # return jsonify({'success': False, 'message': f'只允許上傳JPG檔案，發現: {file.filename}'})
-    
-    if not images_data:
-        return jsonify({'success': False, 'message': '沒有有效的JPG圖片上傳'})
+    # Basic validation: Check if at least one file was uploaded
+    if not uploaded_files or all(f.filename == '' for f in uploaded_files):
+         return jsonify({'success': False, 'message': '沒有選擇任何檔案'})
+
+    # Filter for valid JPGs (optional server-side check, client-side accept should help)
+    valid_files = [f for f in uploaded_files if f and f.filename.lower().endswith('.jpg')]
+    if not valid_files:
+         return jsonify({'success': False, 'message': '上傳的檔案中沒有有效的JPG圖片'})
 
     # Get description data from form
     description_data = {
@@ -54,8 +50,8 @@ def upload_portfolio():
         "type": request.form.get("type", "")
     }
 
-    # Call manager function with images and description data
-    success, message = PortfolioManager.create_new_portfolio(images_data, description_data)
+    # Call manager function with FileStorage objects and description data
+    success, message = PortfolioManager.create_new_portfolio(valid_files, description_data)
     return jsonify({'success': success, 'message': message})
 
 @app.route('/api/portfolio/delete', methods=['POST'])
@@ -70,6 +66,7 @@ def delete_portfolio():
     return jsonify({'success': success, 'message': message})
 
 # --- Git Operations API ---
+# ... (Git API routes remain the same) ...
 @app.route('/api/git/clone', methods=['POST'])
 def git_clone():
     try:

@@ -2,15 +2,86 @@ import os
 import json
 from typing import List, Dict, Tuple
 import shutil
+from io import BytesIO 
+
+try:
+    from PIL import Image, ImageChops, ImageOps
+except ImportError:
+    print("警告: Pillow 库未安装。图片处理功能将不可用。请运行 'pip install Pillow'")
+    Image = None 
 
 class PortfolioManager:
     BASE_DIR = os.path.join("resources", "remote-access-test")
     PORTFOLIO_DIR = os.path.join("assets", "img", "portfolio")
     DESCRIPTION_FILE = os.path.join(BASE_DIR, "portfolio_description.json")
 
+    # --- Image Processing Helper Functions ---
+    @staticmethod
+    def _trim_whitespace(img, border=10):
+        if not Image: return img 
+        print("  _trim_whitespace: Starting trim...") # Debug
+        try:
+            img_rgb = img.convert("RGB")
+            bg = Image.new("RGB", img_rgb.size, (255, 255, 255))
+            diff = ImageChops.difference(img_rgb, bg)
+            # Corrected: Remove alpha_only argument
+            bbox = diff.getbbox() 
+            print(f"  _trim_whitespace: BBox found: {bbox}") # Debug
+            if bbox:
+                img_cropped = img_rgb.crop(bbox)
+                img_expanded = ImageOps.expand(img_cropped, border=border, fill="white")
+                print("  _trim_whitespace: Trim and expand successful.") # Debug
+                return img_expanded
+            else:
+                print("  _trim_whitespace: No bounding box found, returning original.") # Debug
+                return img_rgb 
+        except Exception as e:
+            print(f"  _trim_whitespace: Error during trim: {e}") # Debug
+            return img.convert("RGB") 
+
+    @staticmethod
+    def _resize_and_center_image(img_to_resize, canvas_size):
+        if not Image: return img_to_resize 
+        print(f"  _resize_and_center_image: Starting resize. Canvas size: {canvas_size}") # Debug
+        try:
+            img = PortfolioManager._trim_whitespace(img_to_resize, border=10)
+            
+            img_ratio = img.width / img.height
+            canvas_ratio = canvas_size[0] / canvas_size[1]
+            
+            target_w = canvas_size[0] - 20 
+            target_h = canvas_size[1] - 20
+
+            if img_ratio > canvas_ratio:
+                new_width = target_w
+                new_height = int(new_width / img_ratio)
+            else:
+                new_height = target_h
+                new_width = int(new_height * img_ratio)
+
+            new_width = max(1, new_width)
+            new_height = max(1, new_height)
+            print(f"  _resize_and_center_image: Resizing to: {new_width}x{new_height}") # Debug
+            
+            img_resized = img.resize((new_width, new_height), Image.Resampling.LANCZOS) 
+            
+            canvas = Image.new("RGB", canvas_size, (255, 255, 255))
+            
+            x_offset = (canvas_size[0] - new_width) // 2
+            y_offset = (canvas_size[1] - new_height) // 2
+            print(f"  _resize_and_center_image: Pasting at offset: ({x_offset}, {y_offset})") # Debug
+            
+            canvas.paste(img_resized, (x_offset, y_offset))
+            print("  _resize_and_center_image: Resize and center successful.") # Debug
+            return canvas
+        except Exception as e:
+            print(f"  _resize_and_center_image: Error during resize/center: {e}") # Debug
+            return img_to_resize.convert("RGB") 
+    # --- End Image Processing ---
+
     @staticmethod
     def load_descriptions() -> Dict[str, Dict]:
-        """加载作品集描述信息"""
+        # ... (load_descriptions code remains the same) ...
         descriptions = {}
         try:
             with open(PortfolioManager.DESCRIPTION_FILE, 'r', encoding='utf-8') as f:
@@ -31,7 +102,7 @@ class PortfolioManager:
 
     @staticmethod
     def add_description_entry(folder_name: str, data: Dict) -> bool:
-        """添加新的描述条目到JSON文件"""
+        # ... (add_description_entry code remains the same) ...
         try:
             entries = []
             if os.path.exists(PortfolioManager.DESCRIPTION_FILE):
@@ -54,12 +125,13 @@ class PortfolioManager:
                 "坪數": data.get("size", ""),
                 "種類": data.get("type", "")
             }
+            entries = [e for e in entries if e.get("圖片連結", "").strip('/').split('/')[-1] != folder_name]
             entries.append(new_entry)
 
             with open(PortfolioManager.DESCRIPTION_FILE, 'w', encoding='utf-8') as f:
                 json.dump(entries, f, ensure_ascii=False, indent=4) 
             
-            print(f"成功添加描述到 {PortfolioManager.DESCRIPTION_FILE} for {folder_name}")
+            print(f"成功添加/更新描述到 {PortfolioManager.DESCRIPTION_FILE} for {folder_name}")
             return True
         except Exception as e:
             print(f"添加描述到 {PortfolioManager.DESCRIPTION_FILE} 时出错: {e}")
@@ -67,7 +139,7 @@ class PortfolioManager:
 
     @staticmethod
     def get_portfolio_items() -> List[Dict]:
-        """获取所有作品集及其图片和描述，按文件夹名称数字降序排序"""
+        # ... (get_portfolio_items code remains the same, including sorting) ...
         items = []
         portfolio_path = os.path.join(PortfolioManager.BASE_DIR, PortfolioManager.PORTFOLIO_DIR)
         descriptions = PortfolioManager.load_descriptions()
@@ -76,26 +148,25 @@ class PortfolioManager:
             os.makedirs(portfolio_path, exist_ok=True)
             return items
 
-        # First, collect all items
         temp_items = []
-        for item_dir in os.listdir(portfolio_path): # No need to sort here initially
+        for item_dir in os.listdir(portfolio_path): 
             dir_path = os.path.join(portfolio_path, item_dir)
             if not os.path.isdir(dir_path) or not item_dir.startswith('w'):
                 continue
-
-            # Extract number for sorting, handle potential errors
             try:
                 folder_num = int(item_dir[1:])
             except ValueError:
                 print(f"警告: 无法从文件夹名称提取数字: {item_dir}")
-                continue # Skip folders that don't match w<number> format
+                continue 
 
             images = []
-            for filename in sorted(os.listdir(dir_path)): # Sort images within folder
+            filenames_sorted = sorted(os.listdir(dir_path), key=lambda name: int(name.split('.')[0]) if name.split('.')[0].isdigit() else float('inf'))
+            
+            for filename in filenames_sorted: 
                 filepath = os.path.join(dir_path, filename)
                 if os.path.isfile(filepath) and filename.lower().endswith('.jpg'):
                     images.append({
-                        'name': filename,
+                        'name': filename, 
                         'path': f"/assets/img/portfolio/{item_dir}/{filename}"
                     })
             
@@ -104,7 +175,7 @@ class PortfolioManager:
                 temp_items.append({
                     'name': desc_data.get("專案名", f"作品集 {item_dir[1:]}"), 
                     'folder': item_dir, 
-                    'folder_num': folder_num, # Store number for sorting
+                    'folder_num': folder_num, 
                     'images': images,
                     'description': desc_data.get("描述", "").replace('\n', '<br>'), 
                     'area': desc_data.get("區域", ""),
@@ -113,14 +184,12 @@ class PortfolioManager:
                     'type': desc_data.get("種類", "")
                 })
         
-        # Sort the collected items by folder_num in descending order
         items = sorted(temp_items, key=lambda x: x['folder_num'], reverse=True)
-        
         return items
 
     @staticmethod
     def get_next_portfolio_number() -> int:
-        """获取下一个作品集编号"""
+        # ... (get_next_portfolio_number code remains the same) ...
         portfolio_path = os.path.join(PortfolioManager.BASE_DIR, PortfolioManager.PORTFOLIO_DIR)
         if not os.path.exists(portfolio_path):
             return 1
@@ -133,36 +202,90 @@ class PortfolioManager:
         return max_num + 1
 
     @staticmethod
-    def create_new_portfolio(images: List[bytes], description_data: Dict) -> Tuple[bool, str]:
-        """创建新作品集、上传图片并添加描述"""
+    def create_new_portfolio(uploaded_files: List, description_data: Dict) -> Tuple[bool, str]:
+        """创建新作品集、上传图片(保留原始名称)、处理0.jpg并添加描述"""
         folder_name = ""
+        if not Image: 
+             return False, "错误: Pillow 库未安装，无法处理图片。"
         try:
+            # 1. Create folder
             next_num = PortfolioManager.get_next_portfolio_number()
             folder_name = f"w{next_num}"
             portfolio_path = os.path.join(PortfolioManager.BASE_DIR, PortfolioManager.PORTFOLIO_DIR, folder_name)
             os.makedirs(portfolio_path, exist_ok=True)
+            print(f"Created folder: {portfolio_path}") # Debug
             
-            for i, image_data in enumerate(images):
-                with open(os.path.join(portfolio_path, f"{i}.jpg"), "wb") as f:
-                    f.write(image_data)
-            
+            saved_filenames = []
+            file_map = {} 
+
+            # 2. Save images using original filenames
+            for file_storage in uploaded_files:
+                original_filename = file_storage.filename
+                if original_filename and original_filename.lower().endswith('.jpg'):
+                    safe_filename = original_filename 
+                    file_path = os.path.join(portfolio_path, safe_filename)
+                    file_storage.save(file_path) 
+                    saved_filenames.append(safe_filename)
+                    file_map[safe_filename] = file_path
+                    print(f"Saved image: {file_path}") # Debug
+                else:
+                    print(f"Skipped invalid file: {original_filename}")
+
+            if not saved_filenames:
+                shutil.rmtree(portfolio_path)
+                return False, "没有有效的JPG图片被保存"
+
+            # 3. Process 0.jpg if 0.jpg and 1.jpg exist
+            path_0 = file_map.get("0.jpg")
+            path_1 = file_map.get("1.jpg")
+            processing_done = False
+
+            if path_0 and path_1:
+                print(f"Attempting to process {path_0} based on {path_1} dimensions...") # Debug
+                try:
+                    with Image.open(path_0) as img_0, Image.open(path_1) as img_1:
+                        canvas_size = img_1.size
+                        print(f"  Reference canvas size from {path_1}: {canvas_size}") # Debug
+                        processed_img_0 = PortfolioManager._resize_and_center_image(img_0, canvas_size)
+                        
+                        if processed_img_0: 
+                            processed_img_0.save(path_0, format='JPEG', quality=95)
+                            processing_done = True
+                            print(f"  Successfully processed and overwrote {path_0}") # Debug
+                        else:
+                            print(f"  Image processing returned None for {path_0}. Keeping original.") # Debug
+
+                except FileNotFoundError as fnf_e:
+                     print(f"  Error opening image file during processing: {fnf_e}. Keeping original.") # Debug
+                except Exception as img_proc_e:
+                    print(f"  Error processing image {path_0}: {img_proc_e}. Keeping original.") # Debug
+            elif path_0:
+                 print(f"  Found {path_0} but not 1.jpg. Skipping processing.") # Debug
+            else:
+                 print("  Did not find 0.jpg. Skipping processing.") # Debug
+
+            # 4. Add description entry to JSON
             if PortfolioManager.add_description_entry(folder_name, description_data):
-                return True, f"成功创建作品集 {folder_name} 并添加描述"
+                return True, f"成功创建作品集 {folder_name} 并添加描述" + (". (图片已处理)" if processing_done else ". (图片未处理或缺少必要文件)")
             else:
                 return False, f"成功创建作品集 {folder_name} 但添加描述失败"
 
         except Exception as e:
+            if folder_name and os.path.exists(os.path.join(PortfolioManager.BASE_DIR, PortfolioManager.PORTFOLIO_DIR, folder_name)):
+                 try:
+                     shutil.rmtree(os.path.join(PortfolioManager.BASE_DIR, PortfolioManager.PORTFOLIO_DIR, folder_name))
+                     print(f"Cleaned up folder {folder_name} due to error.")
+                 except Exception as cleanup_e:
+                     print(f"Error during cleanup of folder {folder_name}: {cleanup_e}")
             return False, f"创建作品集 {folder_name} 时出错: {e}"
 
     @staticmethod
     def delete_portfolio(folder_name: str) -> Tuple[bool, str]:
-        """删除指定的作品集文件夹和对应的描述"""
+        # ... (delete_portfolio code remains the same) ...
         delete_folder_success = False
         delete_desc_success = False
         folder_message = ""
         desc_message = ""
-
-        # 1. Delete folder
         try:
             if not folder_name or not folder_name.startswith('w') or not folder_name[1:].isdigit():
                 folder_message = "无效的作品集文件夹名称"
@@ -178,18 +301,14 @@ class PortfolioManager:
         except Exception as e:
             folder_message = f"删除文件夹 {folder_name} 时出错: {e}"
             print(f"Error deleting portfolio folder {folder_name}: {e}")
-
-        # 2. Delete description entry
         try:
             entries = []
             if os.path.exists(PortfolioManager.DESCRIPTION_FILE):
                 with open(PortfolioManager.DESCRIPTION_FILE, 'r', encoding='utf-8') as f:
                     entries = json.load(f)
-                
                 if isinstance(entries, list):
                     original_length = len(entries)
                     entries = [entry for entry in entries if entry.get("圖片連結", "").strip('/').split('/')[-1] != folder_name]
-                    
                     if len(entries) < original_length:
                         with open(PortfolioManager.DESCRIPTION_FILE, 'w', encoding='utf-8') as f:
                             json.dump(entries, f, ensure_ascii=False, indent=4)
@@ -205,8 +324,6 @@ class PortfolioManager:
         except Exception as e:
             desc_message = f"删除描述条目 {folder_name} 时出错: {e}"
             print(f"Error deleting description entry {folder_name}: {e}")
-
         final_success = delete_folder_success 
         final_message = f"{folder_message}. {desc_message}."
-        
         return final_success, final_message
