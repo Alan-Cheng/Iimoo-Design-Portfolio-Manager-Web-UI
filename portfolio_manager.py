@@ -279,9 +279,11 @@ class PortfolioManager:
                  # print("  Did not find 0.jpg. Skipping processing.") # Removed Debug
 
             if PortfolioManager.add_description_entry(folder_name, description_data):
-                return True, f"成功创建作品集 {folder_name} 并添加描述" + (". (图片已处理)" if processing_done else ". (图片未处理或缺少必要文件)")
+                # On success, return True and the folder name
+                return True, folder_name
             else:
-                return False, f"成功创建作品集 {folder_name} 但添加描述失败"
+                # If description fails, still consider portfolio created but return error message
+                return False, f"作品集資料夾 '{folder_name}' 已建立，但新增描述失敗"
         except Exception as e:
             if folder_name and os.path.exists(os.path.join(PortfolioManager.BASE_DIR, PortfolioManager.PORTFOLIO_DIR, folder_name)):
                  try:
@@ -289,7 +291,7 @@ class PortfolioManager:
                      # print(f"Cleaned up folder {folder_name} due to error.") # Removed Debug
                  except Exception as cleanup_e:
                      print(f"Error during cleanup of folder {folder_name}: {cleanup_e}")
-            return False, f"创建作品集 {folder_name} 时出错: {e}"
+            return False, f"建立作品集 '{folder_name}' 時發生錯誤: {e}"
 
     @staticmethod
     def delete_portfolio(folder_name: str) -> Tuple[bool, str]:

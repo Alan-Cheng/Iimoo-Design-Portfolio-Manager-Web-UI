@@ -51,7 +51,20 @@ def upload_portfolio():
         "size": request.form.get("size", ""),
         "type": request.form.get("type", "")
     }
-    success, message = PortfolioManager.create_new_portfolio(valid_files, description_data)
+    success, message_or_folder = PortfolioManager.create_new_portfolio(valid_files, description_data)
+    if success:
+        folder_name = message_or_folder # On success, create_new_portfolio returns the folder name
+        commit_message = f"新增作品集: {folder_name}"
+        git_success, git_message = GitOperations.add_commit_push(commit_message)
+        if not git_success:
+            # Log the Git error but still return success for the portfolio creation
+            print(f"警告: 作品集 '{folder_name}' 已成功建立，但 Git 操作失敗: {git_message}")
+            message = f"{message_or_folder} (Git 操作失敗: {git_message})" # Append warning
+        else:
+             message = f"{message_or_folder} (Git 操作成功)"
+    else:
+        message = message_or_folder # On failure, it returns the error message
+
     return jsonify({'success': success, 'message': message})
 
 @app.route('/api/portfolio/update', methods=['POST']) # Using POST for simplicity
@@ -64,6 +77,15 @@ def update_portfolio():
         return jsonify({'success': False, 'message': '缺少必要參數 (folder_name 或 update_data)'})
         
     success, message = PortfolioManager.update_description_entry(folder_name, update_data)
+    if success:
+        commit_message = f"更新作品集描述: {folder_name}"
+        git_success, git_message = GitOperations.add_commit_push(commit_message)
+        if not git_success:
+            print(f"警告: 作品集 '{folder_name}' 描述已成功更新，但 Git 操作失敗: {git_message}")
+            message = f"{message} (Git 操作失敗: {git_message})"
+        else:
+            message = f"{message} (Git 操作成功)"
+
     return jsonify({'success': success, 'message': message})
 
 
@@ -73,7 +95,18 @@ def delete_portfolio():
     folder_name = data.get('folder_name')
     if not folder_name:
         return jsonify({'success': False, 'message': '缺少作品集資料夾名稱'})
+    # Store the folder name before deletion for the commit message
+    deleted_folder_name = folder_name
     success, message = PortfolioManager.delete_portfolio(folder_name)
+    if success:
+        commit_message = f"刪除作品集: {deleted_folder_name}"
+        git_success, git_message = GitOperations.add_commit_push(commit_message)
+        if not git_success:
+             print(f"警告: 作品集 '{deleted_folder_name}' 已成功刪除，但 Git 操作失敗: {git_message}")
+             message = f"{message} (Git 操作失敗: {git_message})"
+        else:
+             message = f"{message} (Git 操作成功)"
+
     return jsonify({'success': success, 'message': message})
 
 # --- Git Operations API ---

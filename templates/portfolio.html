@@ -91,7 +91,6 @@
         </div>
     </div>
 
-    {/* Image Modal - unchanged */}
      <div class="modal fade" id="portfolioModal" tabindex="-1">
          <div class="modal-dialog modal-xl modal-view-mode"> 
              <div class="modal-content">
@@ -201,10 +200,10 @@
                  if (form.type.value === "") { alert('請選擇作品種類'); form.type.focus(); return; }
                  const formData = new FormData(form); 
                  const files = imageUploadInput.files;
-                 if (files.length === 0) { alert('请至少选择一张JPG图片'); return; }
+                 if (files.length === 0) { alert('請至少選擇一張JPG圖片'); return; }
                  const btn = form.querySelector('button[type="submit"]');
                  const resultDiv = document.getElementById('upload-result');
-                 btn.disabled = true; btn.textContent = '上传中...'; resultDiv.innerHTML = '';
+                 btn.disabled = true; btn.textContent = '上傳中...'; resultDiv.innerHTML = '';
                  try {
                      const response = await fetch('/api/portfolio/upload', { method: 'POST', body: formData });
                      const result = await response.json();
@@ -218,7 +217,7 @@
                          const bsCollapse = bootstrap.Collapse.getInstance(collapseElement);
                          if (bsCollapse) { bsCollapse.hide(); }
                      }
-                 } catch (error) { resultDiv.innerHTML = `<div class="alert alert-danger">上传失败: ${error.message}</div>`;
+                 } catch (error) { resultDiv.innerHTML = `<div class="alert alert-danger">上傳失敗: ${error.message}</div>`;
                  } finally { btn.disabled = false; btn.textContent = '上傳並建立作品'; }
              }
 
@@ -361,7 +360,6 @@
                   const placeholder = document.getElementById('modal-alert-placeholder');
                   if (placeholder) placeholder.innerHTML = ''; 
              }
-
         });
     </script>
 </body>

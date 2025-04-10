@@ -106,3 +106,33 @@ class GitOperations:
             cred_file = os.path.join(GitOperations.REPO_PATH, '.git-credentials')
             if os.path.exists(cred_file):
                 os.remove(cred_file)
+
+    @staticmethod
+    def add_commit_push(commit_message: str) -> Tuple[bool, str]:
+        """Adds all changes, commits with a message, and pushes to remote."""
+        try:
+            # 1. Add
+            add_success, add_msg = GitOperations.add('.')
+            if not add_success:
+                return False, f"Git Add 失敗: {add_msg}"
+
+            # 2. Commit
+            commit_success, commit_msg = GitOperations.commit(commit_message)
+            # Allow "nothing to commit" as a non-fatal error for commit
+            if not commit_success and "nothing to commit" not in commit_msg.lower():
+                 return False, f"Git Commit 失敗: {commit_msg}"
+            
+            # If commit reported "nothing to commit", we can skip push
+            if "nothing to commit" in commit_msg.lower():
+                return True, "沒有偵測到變更，無需 commit 或 push。"
+
+            # 3. Push
+            push_success, push_msg = GitOperations.push()
+            # Allow "Everything up-to-date" as a non-fatal error for push
+            if not push_success and "everything up-to-date" not in push_msg.lower():
+                 return False, f"Git Push 失敗: {push_msg}"
+
+            return True, f"Git 操作成功: Add='{add_msg}', Commit='{commit_msg}', Push='{push_msg}'"
+
+        except Exception as e:
+            return False, f"執行 Git 操作時發生未預期錯誤: {str(e)}"
