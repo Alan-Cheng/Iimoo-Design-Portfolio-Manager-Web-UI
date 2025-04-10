@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Git Remote Access</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        .operation-btn {
+            margin: 0.5rem;
+            min-width: 120px;
+        }
+        .result-container {
+            margin-top: 1rem;
+            padding: 1rem;
+            border-radius: 0.5rem;
+            background-color: #f8f9fa;
+        }
+        .form-text {
+            font-size: 0.875rem;
+            color: #6c757d;
+        }
+    </style>
+</head>
+<body>
+    <div class="container py-4">
+        <h1 class="mb-4">Git Remote Access</h1>
+        <h4 class="mb-3">Repository: Alan-Cheng/remote-access-test</h4>
+        
+        <div class="d-flex flex-wrap mb-4">
+            <button id="clone-btn" class="btn btn-primary operation-btn">Clone</button>
+            <button id="pull-btn" class="btn btn-primary operation-btn">Pull</button>
+        </div>
+
+        <div class="mb-4">
+            <div class="mb-3">
+                <label for="files-input" class="form-label">Files to Add</label>
+                <input type="text" class="form-control" id="files-input" 
+                       placeholder="例如: file.txt 或 folder/ 或 . (全部檔案)">
+                <small class="form-text">
+                    輸入要加入的檔案或目錄，多個項目用空格分隔。<br>
+                    範例: "index.html styles.css" 或 "." (全部檔案) 或 "src/"
+                </small>
+                <button id="add-btn" class="btn btn-primary operation-btn mt-2">Add Files</button>
+            </div>
+
+            <div class="mb-3">
+                <label for="commit-msg" class="form-label">Commit Message</label>
+                <input type="text" class="form-control" id="commit-msg" placeholder="輸入commit訊息">
+                <button id="commit-btn" class="btn btn-primary operation-btn mt-2">Commit</button>
+            </div>
+
+            <button id="push-btn" class="btn btn-primary operation-btn">Push Changes</button>
+        </div>
+
+        <div class="result-container" id="result-area"></div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const resultArea = document.getElementById('result-area');
+            
+            // Setup button click handlers
+            document.getElementById('clone-btn').addEventListener('click', () => 
+                gitOperation('/api/git/clone', 'POST'));
+            
+            document.getElementById('pull-btn').addEventListener('click', () => 
+                gitOperation('/api/git/pull', 'POST'));
+            
+            document.getElementById('add-btn').addEventListener('click', () => 
+                gitOperation('/api/git/add', 'POST', {
+                    files: document.getElementById('files-input').value
+                }));
+            
+            document.getElementById('commit-btn').addEventListener('click', () => 
+                gitOperation('/api/git/commit', 'POST', {
+                    message: document.getElementById('commit-msg').value
+                }));
+            
+            document.getElementById('push-btn').addEventListener('click', () => 
+                gitOperation('/api/git/push', 'POST'));
+
+            async function gitOperation(endpoint, method, data = {}) {
+                const btn = event.target;
+                const originalText = btn.textContent;
+                
+                try {
+                    btn.disabled = true;
+                    btn.textContent = 'Processing...';
+                    
+                    const response = await fetch(endpoint, {
+                        method,
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: Object.keys(data).length ? JSON.stringify(data) : null
+                    });
+
+                    const result = await response.json();
+                    showResult(result);
+                } catch (error) {
+                    showResult({
+                        success: false,
+                        message: `Error: ${error.message}`
+                    });
+                } finally {
+                    btn.disabled = false;
+                    btn.textContent = originalText;
+                }
+            }
+
+            function showResult(result) {
+                resultArea.innerHTML = `
+                    <div class="alert alert-${result.success ? 'success' : 'danger'}">
+                        ${result.success ? '✅' : '❌'} ${result.message}
+                    </div>
+                `;
+            }
+        });
+    </script>
+</body>
+</html>
