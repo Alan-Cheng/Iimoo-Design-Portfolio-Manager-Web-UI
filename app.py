@@ -1,9 +1,9 @@
 from flask import Flask, render_template, request, jsonify, send_from_directory
-from git_operations import GitOperations # Import GitOperations
+from git_operations import GitOperations 
 from portfolio_manager import PortfolioManager
 from dotenv import load_dotenv
 import os
-import threading # To run git push in background
+import threading 
 
 load_dotenv()
 app = Flask(__name__)
@@ -12,22 +12,13 @@ app = Flask(__name__)
 def run_git_push(commit_message):
     """Runs add, commit, push in a background thread."""
     print(f"Background task started: Pushing changes for '{commit_message}'")
-    # Ensure the repo exists before trying to push
     if not os.path.exists(GitOperations.REPO_PATH):
         print("Repository not found locally, skipping push.")
-        # Optionally clone it first? Or just rely on initial setup?
-        # For now, just skip if not cloned.
-        # clone_success, clone_msg = GitOperations.clone()
-        # if not clone_success:
-        #     print(f"Failed to clone repo before push: {clone_msg}")
-        #     return
         return
 
-    # Pull first to avoid conflicts (optional, but recommended)
     pull_success, pull_msg = GitOperations.pull()
     if not pull_success:
         print(f"Pull before push failed: {pull_msg}. Attempting push anyway...")
-        # Decide if you want to stop or continue if pull fails
 
     success, message = GitOperations.add_commit_push(commit_message)
     if success:
@@ -46,24 +37,12 @@ def serve_static(filename):
 # --- Page Routes ---
 @app.route('/')
 def index():
-    # Ensure repo is cloned on first load if not present
     if not os.path.exists(GitOperations.REPO_PATH):
         print("Repository not found locally, attempting to clone...")
         clone_success, clone_msg = GitOperations.clone()
         if not clone_success:
             print(f"Initial clone failed: {clone_msg}")
-            # Maybe render an error page or message?
     return render_template('portfolio.html')
-
-@app.route('/git')
-def git_operations():
-     # Ensure repo is cloned if accessing git page
-    if not os.path.exists(GitOperations.REPO_PATH):
-        print("Repository not found locally, attempting to clone...")
-        clone_success, clone_msg = GitOperations.clone()
-        if not clone_success:
-            print(f"Initial clone failed: {clone_msg}")
-    return render_template('index.html')
 
 # --- Portfolio API Routes ---
 @app.route('/api/portfolio', methods=['GET'])
@@ -93,15 +72,13 @@ def upload_portfolio():
         "type": request.form.get("type", "")
     }
     
-    # Call manager function
     success, message = PortfolioManager.create_new_portfolio(valid_files, description_data)
     
-    # If successful, trigger background git push
     if success:
         commit_message = f"Add portfolio: {description_data.get('project_name', 'New Portfolio')}"
         thread = threading.Thread(target=run_git_push, args=(commit_message,))
         thread.start()
-        message += " (正在背景同步到 GitHub...)" # Inform user
+        message += " (正在背景同步到 GitHub...)" 
 
     return jsonify({'success': success, 'message': message})
 
@@ -135,15 +112,13 @@ def update_portfolio():
         else:
             print(f"No valid new image files provided for replacement in {folder_name}.")
 
-    # Always attempt to update description
     desc_update_success, desc_update_message = PortfolioManager.update_description_entry(folder_name, update_data)
 
-    final_success = desc_update_success # Success primarily depends on description update
+    final_success = desc_update_success 
     final_message = desc_update_message
     if image_replace_message: 
         final_message += f" 图片替换状态: {image_replace_message}"
 
-    # If description update OR image replacement succeeded, trigger push
     if desc_update_success or (images_replaced and image_replace_success):
          commit_message = f"Update portfolio: {folder_name} ({update_data.get('project_name', '')})"
          thread = threading.Thread(target=run_git_push, args=(commit_message,))
@@ -160,67 +135,18 @@ def delete_portfolio():
     if not folder_name:
         return jsonify({'success': False, 'message': '缺少作品集資料夾名稱'})
         
-    # Call manager function
     success, message = PortfolioManager.delete_portfolio(folder_name)
 
-    # If successful, trigger background git push
     if success:
         commit_message = f"Delete portfolio: {folder_name}"
         thread = threading.Thread(target=run_git_push, args=(commit_message,))
         thread.start()
-        message += " (正在背景同步到 GitHub...)" # Inform user
+        message += " (正在背景同步到 GitHub...)" 
 
     return jsonify({'success': success, 'message': message})
 
-# --- Git Operations API (Manual Controls) ---
-# These remain for manual triggering if needed
-@app.route('/api/git/clone', methods=['POST'])
-def git_clone_manual():
-    try:
-        success, message = GitOperations.clone()
-        return jsonify({'success': success, 'message': message})
-    except Exception as e:
-        return jsonify({'success': False, 'message': str(e)})
-
-@app.route('/api/git/pull', methods=['POST'])
-def git_pull_manual():
-    try:
-        success, message = GitOperations.pull()
-        return jsonify({'success': success, 'message': message})
-    except Exception as e:
-        return jsonify({'success': False, 'message': str(e)})
-
-@app.route('/api/git/add', methods=['POST'])
-def git_add_manual():
-    data = request.json
-    files = data.get('files', '.')
-    try:
-        success, message = GitOperations.add(files)
-        return jsonify({'success': success, 'message': message})
-    except Exception as e:
-        return jsonify({'success': False, 'message': str(e)})
-
-@app.route('/api/git/commit', methods=['POST'])
-def git_commit_manual():
-    data = request.json
-    message = data.get('message', '')
-    try:
-        success, message = GitOperations.commit(message)
-        return jsonify({'success': success, 'message': message})
-    except Exception as e:
-        return jsonify({'success': False, 'message': str(e)})
-
-@app.route('/api/git/push', methods=['POST'])
-def git_push_manual():
-    try:
-        success, message = GitOperations.push()
-        return jsonify({'success': success, 'message': message})
-    except Exception as e:
-        return jsonify({'success': False, 'message': str(e)})
-
 # --- Main Execution ---
 if __name__ == '__main__':
-    # Ensure repo is cloned on startup
     if not os.path.exists(GitOperations.REPO_PATH):
         print("Repository not found locally on startup, attempting to clone...")
         clone_success, clone_msg = GitOperations.clone()
@@ -229,4 +155,7 @@ if __name__ == '__main__':
         else:
              print(f"Initial clone successful.")
              
-    app.run(debug=True)
+    # Bind to 0.0.0.0 to be accessible from outside the container
+    # Use os.environ.get('PORT', 5000) for flexibility if needed later
+    port = int(os.environ.get("PORT", 5000))
+    app.run(host='0.0.0.0', port=port, debug=False) # Disable debug mode in Docker
