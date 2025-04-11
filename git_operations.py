@@ -9,7 +9,7 @@ class GitOperations:
     REPO_NAME = "remote-access-test"
     # Ensure REPO_PATH uses the correct base directory if needed, assuming it's relative to project root
     REPO_PATH = os.path.abspath(os.path.join("resources", REPO_NAME)) 
-    REPO_URL = "https://github.com/Alan-Cheng/remote-access-test.git"
+    REPO_URL = os.getenv('GITHUB_REPO_URL') 
     TOKEN = os.getenv('GITHUB_TOKEN')
 
     @staticmethod
