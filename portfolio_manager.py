@@ -7,7 +7,7 @@ from io import BytesIO
 try:
     from PIL import Image, ImageChops, ImageOps
 except ImportError:
-    print("警告: Pillow 库未安装。图片处理功能将不可用。请运行 'pip install Pillow'")
+    print("警告: Pillow 未安裝。圖片處理功能無法使用。请在終端機執行 'pip install Pillow'")
     Image = None 
 
 class PortfolioManager:
@@ -45,10 +45,10 @@ class PortfolioManager:
             # target_w = canvas_size[0] - 20 
             # target_h = canvas_size[1] - 20
             if img_ratio > canvas_ratio:
-                new_width = target_w
+                new_width = canvas_size[0]
                 new_height = int(new_width / img_ratio)
             else:
-                new_height = canvas_size[0]
+                new_height = canvas_size[1]
                 new_width = int(new_height * img_ratio)
             img_resized = img.resize((new_width, new_height), Image.Resampling.LANCZOS) 
             canvas = Image.new("RGB", canvas_size, (255, 255, 255))
@@ -76,9 +76,9 @@ class PortfolioManager:
         except FileNotFoundError:
             pass 
         except json.JSONDecodeError as e:
-            print(f"描述文件格式错误: {PortfolioManager.DESCRIPTION_FILE}: {e}")
+            print(f"作品描述json檔案錯誤: {PortfolioManager.DESCRIPTION_FILE}: {e}")
         except Exception as e:
-            print(f"加载描述文件时出错: {e}")
+            print(f"載入作品描述json檔案時發生錯誤: {e}")
         return descriptions
 
     @staticmethod
@@ -90,10 +90,10 @@ class PortfolioManager:
                     with open(PortfolioManager.DESCRIPTION_FILE, 'r', encoding='utf-8') as f:
                         entries = json.load(f)
                     if not isinstance(entries, list): 
-                        print(f"警告: 描述文件不是列表格式，将重置为空列表。")
+                        print(f"警告: 作品描述json檔案是陣列，重置為空陣列。")
                         entries = []
                 except json.JSONDecodeError:
-                     print(f"警告: 描述文件格式错误，将重置为空列表。")
+                     print(f"警告: 作品描述json檔案錯誤，重置為空陣列。")
                      entries = []
 
             new_entry = {
@@ -112,7 +112,7 @@ class PortfolioManager:
                 json.dump(entries, f, ensure_ascii=False, indent=4) 
             return True
         except Exception as e:
-            print(f"添加描述到 {PortfolioManager.DESCRIPTION_FILE} 时出错: {e}")
+            print(f"新增作品描述到 {PortfolioManager.DESCRIPTION_FILE} 時出現錯誤: {e}")
             return False
 
     @staticmethod
@@ -120,11 +120,11 @@ class PortfolioManager:
         try:
             entries = []
             if not os.path.exists(PortfolioManager.DESCRIPTION_FILE):
-                return False, "描述文件不存在"
+                return False, "作品描述json檔案不存在"
             with open(PortfolioManager.DESCRIPTION_FILE, 'r', encoding='utf-8') as f:
                 entries = json.load(f)
             if not isinstance(entries, list):
-                return False, "描述文件格式错误 (非列表)"
+                return False, "作品描述json檔案格式错误 (非陣列)"
             found = False
             for i, entry in enumerate(entries):
                 entry_folder = entry.get("圖片連結", "").strip('/').split('/')[-1]
@@ -138,15 +138,15 @@ class PortfolioManager:
                     found = True
                     break
             if not found:
-                return False, f"未在描述文件中找到作品集 {folder_name}"
+                return False, f"未在作品描述json檔案中找到作品集 {folder_name}"
             with open(PortfolioManager.DESCRIPTION_FILE, 'w', encoding='utf-8') as f:
                 json.dump(entries, f, ensure_ascii=False, indent=4)
             return True, f"成功更新作品集 {folder_name} 的描述"
         except json.JSONDecodeError:
-            return False, "描述文件格式错误"
+            return False, "作品描述json檔案格式错误"
         except Exception as e:
-            print(f"更新描述 {PortfolioManager.DESCRIPTION_FILE} 时出错 for {folder_name}: {e}")
-            return False, f"更新描述时出错: {e}"
+            print(f"更新描述 {PortfolioManager.DESCRIPTION_FILE} 時出错 for {folder_name}: {e}")
+            return False, f"更新描述時出錯: {e}"
 
     @staticmethod
     def get_portfolio_items() -> List[Dict]:
@@ -197,12 +197,12 @@ class PortfolioManager:
     @staticmethod
     def replace_portfolio_images(folder_name: str, uploaded_files: List) -> Tuple[bool, str]:
         if not Image: 
-             return False, "错误: Pillow 库未安装，无法处理图片。"
+             return False, "錯誤: Pillow 未安装，無法處理圖片。"
         portfolio_path = os.path.join(PortfolioManager.BASE_DIR, PortfolioManager.PORTFOLIO_DIR, folder_name)
         if not os.path.exists(portfolio_path): # Create folder if replacing images for a newly created portfolio
              os.makedirs(portfolio_path, exist_ok=True)
         elif not os.path.isdir(portfolio_path):
-             return False, f"目标路径不是有效文件夹: {portfolio_path}"
+             return False, f"目標路徑並非資料夾: {portfolio_path}"
 
         try:
             # 1. Delete existing JPG files if folder already existed
@@ -213,7 +213,7 @@ class PortfolioManager:
                         try:
                             os.remove(os.path.join(portfolio_path, filename))
                         except OSError as e:
-                            print(f"无法删除文件 {filename}: {e}") # Keep error print for file ops
+                            print(f"無法刪除檔案 {filename}: {e}") # Keep error print for file ops
             
             # 2. Save new images (preserving names)
             saved_filenames = []
@@ -231,7 +231,7 @@ class PortfolioManager:
                     # print(f"Skipped invalid file during replace: {original_filename}") # Removed Debug
 
             if not saved_filenames:
-                return False, "没有有效的JPG图片被保存以替换旧图片"
+                return False, "無有效圖片檔案上傳，無法替換圖片"
 
             # 3. Process 0.jpg if 0.jpg and 1.jpg exist
             path_0 = file_map.get("0.jpg")
@@ -252,11 +252,11 @@ class PortfolioManager:
                 except Exception as img_proc_e:
                     print(f"Error processing replaced image {path_0}: {img_proc_e}. Keeping original.") # Keep error print
             
-            return True, f"成功替换作品集 {folder_name} 的图片"
+            return True, f"成功替換作品集 {folder_name} 的圖片"
 
         except Exception as e:
-            print(f"替换作品集 {folder_name} 图片时出错: {e}") # Keep error print
-            return False, f"替换图片时出错: {e}"
+            print(f"替換作品集 {folder_name} 圖片時出錯: {e}") # Keep error print
+            return False, f"替換圖片時出錯: {e}"
 
 
     @staticmethod
@@ -271,12 +271,12 @@ class PortfolioManager:
             if not save_success:
                  if os.path.exists(os.path.join(PortfolioManager.BASE_DIR, PortfolioManager.PORTFOLIO_DIR, folder_name)):
                      shutil.rmtree(os.path.join(PortfolioManager.BASE_DIR, PortfolioManager.PORTFOLIO_DIR, folder_name))
-                 return False, f"创建作品集 {folder_name} 时保存图片失败: {save_message}"
+                 return False, f"建立作品集 {folder_name} 時保存圖片失敗: {save_message}"
 
             if PortfolioManager.add_description_entry(folder_name, description_data):
-                return True, f"成功创建作品集 {folder_name} 并添加描述. {save_message}"
+                return True, f"成功建立作品集 {folder_name} 並新增描述. {save_message}"
             else:
-                return False, f"成功创建作品集 {folder_name} ({save_message}) 但添加描述失败"
+                return False, f"成功建立作品集 {folder_name} ({save_message}) 但新增描述失敗"
 
         except Exception as e:
             if folder_name and os.path.exists(os.path.join(PortfolioManager.BASE_DIR, PortfolioManager.PORTFOLIO_DIR, folder_name)):
@@ -285,7 +285,7 @@ class PortfolioManager:
                      # print(f"Cleaned up folder {folder_name} due to error.") # Removed Debug
                  except Exception as cleanup_e:
                      print(f"Error during cleanup of folder {folder_name}: {cleanup_e}")
-            return False, f"创建作品集 {folder_name} 时出错: {e}"
+            return False, f"建立作品集 {folder_name} 時出錯: {e}"
 
 
     @staticmethod
@@ -296,18 +296,18 @@ class PortfolioManager:
         desc_message = ""
         try:
             if not folder_name or not folder_name.startswith('w') or not folder_name[1:].isdigit():
-                folder_message = "无效的作品集文件夹名称"
+                folder_message = "無效的作品集資料夾名稱"
             else:
                 portfolio_path = os.path.join(PortfolioManager.BASE_DIR, PortfolioManager.PORTFOLIO_DIR, folder_name)
                 if os.path.exists(portfolio_path) and os.path.isdir(portfolio_path):
                     shutil.rmtree(portfolio_path)
                     delete_folder_success = True
-                    folder_message = f"成功删除文件夹 {folder_name}"
+                    folder_message = f"成功删除資料夾 {folder_name}"
                     # print(f"Deleted portfolio folder: {portfolio_path}") # Removed Debug
                 else:
-                    folder_message = f"作品集文件夹 {folder_name} 不存在"
+                    folder_message = f"作品集資料夾 {folder_name} 不存在"
         except Exception as e:
-            folder_message = f"删除文件夹 {folder_name} 时出错: {e}"
+            folder_message = f"删除資料夾 {folder_name} 時出錯: {e}"
             print(f"Error deleting portfolio folder {folder_name}: {e}")
         try:
             entries = []
@@ -321,16 +321,16 @@ class PortfolioManager:
                         with open(PortfolioManager.DESCRIPTION_FILE, 'w', encoding='utf-8') as f:
                             json.dump(entries, f, ensure_ascii=False, indent=4)
                         delete_desc_success = True
-                        desc_message = f"成功从描述文件中移除 {folder_name}"
+                        desc_message = f"成功從作品描述json檔案中移除 {folder_name}"
                         # print(f"Removed description for {folder_name}") # Removed Debug
                     else:
-                        desc_message = f"描述文件中未找到 {folder_name}"
+                        desc_message = f"作品描述json檔案中未找到 {folder_name}"
                 else:
-                    desc_message = "描述文件格式非列表，无法删除条目"
+                    desc_message = "作品描述json檔案格式非陣列，無法刪除該項目"
             else:
-                desc_message = "描述文件不存在，无需删除条目"
+                desc_message = "作品描述json檔案不存在，無需刪除項目"
         except Exception as e:
-            desc_message = f"删除描述条目 {folder_name} 时出错: {e}"
+            desc_message = f"删除描述項目 {folder_name} 時出錯: {e}"
             print(f"Error deleting description entry {folder_name}: {e}")
         final_success = delete_folder_success 
         final_message = f"{folder_message}. {desc_message}."
