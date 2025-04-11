@@ -6,7 +6,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 class GitOperations:
-    REPO_NAME = "remote-access-test"
+    REPO_NAME = os.getenv('GITHUB_REPO_NAME') # e.g., 'remote-access-test'
     # Ensure REPO_PATH uses the correct base directory if needed, assuming it's relative to project root
     REPO_PATH = os.path.abspath(os.path.join("resources", REPO_NAME)) 
     REPO_URL = os.getenv('GITHUB_REPO_URL') 

@@ -11,7 +11,7 @@ except ImportError:
     Image = None 
 
 class PortfolioManager:
-    BASE_DIR = os.path.join("resources", "remote-access-test")
+    BASE_DIR = os.path.join("resources", os.getenv('GITHUB_REPO_NAME'))
     PORTFOLIO_DIR = os.path.join("assets", "img", "portfolio")
     DESCRIPTION_FILE = os.path.join(BASE_DIR, "portfolio_description.json")
 

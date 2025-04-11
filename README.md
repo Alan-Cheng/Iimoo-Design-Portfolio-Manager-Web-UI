@@ -22,18 +22,19 @@
 ## 本地端設定與執行
 
 1.  **Clone:**
-    手動 clone `Alan-Cheng/remote-access-test` 倉庫到專案根目錄下的 `resources/` 資料夾中，或者讓應用程式在首次啟動時自動 clone。
+    手動 clone `《YourGitHubRepoURL》` 倉庫到專案根目錄下的 `resources/` 資料夾中，或者讓應用程式在首次啟動時自動 clone。
     ```bash
     # (如果手動 Clone)
     mkdir resources
-    git clone https://github.com/Alan-Cheng/remote-access-test.git resources/remote-access-test
+    git clone 《YourGitHubRepoURL》 resources/《YourGitHubRepoName》
     ```
 
 2.  ** `.env` 檔案:**
     在專案根目錄建立一個名為 `.env` 的檔案用於測試環境，填入 GitHub Token：
     ```dotenv
-    GITHUB_TOKEN=《YourGitHubPersonalAccessTokenHere》
-    # GITHUB_REPO_URL=《https://github.com/Alan-Cheng/remote-access-test.git》
+    # GITHUB_TOKEN=《YourGitHubPersonalAccessTokenHere》
+    # GITHUB_REPO_URL=《YourGitHubRepoURL》
+    # GITHUB_REPO_NAME=《YourGitHubRepoName》
     ```
     **重要:**  `ghp_YourGitHubPersonalAccessTokenHere` 替換為有存取權限的 Token。
 
@@ -47,7 +48,7 @@
     ```bash
     python app.py
     ```
-    應用程式啟動時會檢查 `resources/remote-access-test` 是否存在，若不存在會嘗試自動 clone。
+    應用程式啟動時會檢查 `resources/《YourGitHubRepoName》` 是否存在，若不存在會嘗試自動 clone。
 
 5.  **應用程式:**
     打開瀏覽器，輸入 `http://localhost:5000`。
@@ -67,7 +68,8 @@
     # 將 your_actual_github_token 替換成你的 GitHub PAT
     docker run -p 5000:5000 \
     -e GITHUB_TOKEN=《YourGitHubPersonalAccessTokenHere》 \
-    -e GITHUB_REPO_URL=《https://github.com/Alan-Cheng/remote-access-test.git》 \
+    -e GITHUB_REPO_URL=《YourGitHubRepoURL》 \
+    -e GITHUB_REPO_NAME=《YourGitHubRepoName》 \
     --name portfolio-app portfolio-manager-app
     ```
     *   `-p 5000:5000`: 將主機的 Port 5000 映射到容器的 Port 5000。
