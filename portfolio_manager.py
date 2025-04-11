@@ -23,6 +23,7 @@ class PortfolioManager:
             img_rgb = img.convert("RGB")
             bg = Image.new("RGB", img_rgb.size, (255, 255, 255))
             diff = ImageChops.difference(img_rgb, bg)
+            diff = ImageChops.add(diff, diff, 2.0, -100)
             bbox = diff.getbbox() 
             if bbox:
                 img_cropped = img_rgb.crop(bbox)
@@ -41,16 +42,14 @@ class PortfolioManager:
             img = PortfolioManager._trim_whitespace(img_to_resize, border=10)
             img_ratio = img.width / img.height
             canvas_ratio = canvas_size[0] / canvas_size[1]
-            target_w = canvas_size[0] - 20 
-            target_h = canvas_size[1] - 20
+            # target_w = canvas_size[0] - 20 
+            # target_h = canvas_size[1] - 20
             if img_ratio > canvas_ratio:
                 new_width = target_w
                 new_height = int(new_width / img_ratio)
             else:
-                new_height = target_h
+                new_height = canvas_size[0]
                 new_width = int(new_height * img_ratio)
-            new_width = max(1, new_width)
-            new_height = max(1, new_height)
             img_resized = img.resize((new_width, new_height), Image.Resampling.LANCZOS) 
             canvas = Image.new("RGB", canvas_size, (255, 255, 255))
             x_offset = (canvas_size[0] - new_width) // 2

@@ -256,7 +256,7 @@
                      const col = document.createElement('div');
                      col.className = 'col-md-4 col-sm-6 d-flex align-items-stretch'; 
                      const card = document.createElement('div');
-                     card.className = 'card portfolio-card';
+                     card.className = 'card portfolio-card w-100';
                      const descriptionSnippet = item.description ? item.description.replace(/<br\s*\/?>/gi, ' ').substring(0, 80) + '...' : '暫無描述';
                      card.innerHTML = `
                          <img src="${item.images.length > 0 ? item.images[0].path : '/placeholder.jpg'}" class="card-img-top" alt="${item.name}">
