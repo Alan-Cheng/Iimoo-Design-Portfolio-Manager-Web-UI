@@ -75,7 +75,6 @@ class PortfolioManager:
                         if folder_key and folder_key.startswith('w'):
                             descriptions[folder_key] = item
         except FileNotFoundError:
-            # This is expected if the file doesn't exist yet
             pass 
         except json.JSONDecodeError as e:
             print(f"描述文件格式错误: {PortfolioManager.DESCRIPTION_FILE}: {e}")
@@ -112,8 +111,6 @@ class PortfolioManager:
 
             with open(PortfolioManager.DESCRIPTION_FILE, 'w', encoding='utf-8') as f:
                 json.dump(entries, f, ensure_ascii=False, indent=4) 
-            
-            # print(f"成功添加/更新描述到 {PortfolioManager.DESCRIPTION_FILE} for {folder_name}") # Removed Debug
             return True
         except Exception as e:
             print(f"添加描述到 {PortfolioManager.DESCRIPTION_FILE} 时出错: {e}")
@@ -125,13 +122,10 @@ class PortfolioManager:
             entries = []
             if not os.path.exists(PortfolioManager.DESCRIPTION_FILE):
                 return False, "描述文件不存在"
-
             with open(PortfolioManager.DESCRIPTION_FILE, 'r', encoding='utf-8') as f:
                 entries = json.load(f)
-            
             if not isinstance(entries, list):
                 return False, "描述文件格式错误 (非列表)"
-
             found = False
             for i, entry in enumerate(entries):
                 entry_folder = entry.get("圖片連結", "").strip('/').split('/')[-1]
@@ -144,33 +138,25 @@ class PortfolioManager:
                     entries[i]["種類"] = data.get("type", entry.get("種類", ""))
                     found = True
                     break
-            
             if not found:
                 return False, f"未在描述文件中找到作品集 {folder_name}"
-
             with open(PortfolioManager.DESCRIPTION_FILE, 'w', encoding='utf-8') as f:
                 json.dump(entries, f, ensure_ascii=False, indent=4)
-            
-            # print(f"成功更新描述 {PortfolioManager.DESCRIPTION_FILE} for {folder_name}") # Removed Debug
             return True, f"成功更新作品集 {folder_name} 的描述"
-
         except json.JSONDecodeError:
             return False, "描述文件格式错误"
         except Exception as e:
             print(f"更新描述 {PortfolioManager.DESCRIPTION_FILE} 时出错 for {folder_name}: {e}")
             return False, f"更新描述时出错: {e}"
 
-
     @staticmethod
     def get_portfolio_items() -> List[Dict]:
         items = []
         portfolio_path = os.path.join(PortfolioManager.BASE_DIR, PortfolioManager.PORTFOLIO_DIR)
         descriptions = PortfolioManager.load_descriptions()
-        
         if not os.path.exists(portfolio_path):
             os.makedirs(portfolio_path, exist_ok=True)
             return items
-
         temp_items = []
         for item_dir in os.listdir(portfolio_path): 
             dir_path = os.path.join(portfolio_path, item_dir)
@@ -179,62 +165,58 @@ class PortfolioManager:
             try:
                 folder_num = int(item_dir[1:])
             except ValueError:
-                # print(f"警告: 无法从文件夹名称提取数字: {item_dir}") # Removed Debug
                 continue 
-
             images = []
             filenames_sorted = sorted(os.listdir(dir_path), key=lambda name: int(name.split('.')[0]) if name.split('.')[0].isdigit() else float('inf'))
-            
             for filename in filenames_sorted: 
                 filepath = os.path.join(dir_path, filename)
                 if os.path.isfile(filepath) and filename.lower().endswith('.jpg'):
-                    images.append({
-                        'name': filename, 
-                        'path': f"/assets/img/portfolio/{item_dir}/{filename}"
-                    })
-            
+                    images.append({ 'name': filename, 'path': f"/assets/img/portfolio/{item_dir}/{filename}" })
             if images:
                 desc_data = descriptions.get(item_dir, {}) 
                 temp_items.append({
                     'name': desc_data.get("專案名", f"作品集 {item_dir[1:]}"), 
-                    'folder': item_dir, 
-                    'folder_num': folder_num, 
-                    'images': images,
-                    'description': desc_data.get("描述", ""), 
-                    'area': desc_data.get("區域", ""),
-                    'date': desc_data.get("日期", ""),
-                    'size': desc_data.get("坪數", ""),
+                    'folder': item_dir, 'folder_num': folder_num, 'images': images,
+                    'description': desc_data.get("描述", ""), 'area': desc_data.get("區域", ""),
+                    'date': desc_data.get("日期", ""), 'size': desc_data.get("坪數", ""),
                     'type': desc_data.get("種類", "")
                 })
-        
         items = sorted(temp_items, key=lambda x: x['folder_num'], reverse=True)
         return items
 
     @staticmethod
     def get_next_portfolio_number() -> int:
         portfolio_path = os.path.join(PortfolioManager.BASE_DIR, PortfolioManager.PORTFOLIO_DIR)
-        if not os.path.exists(portfolio_path):
-            return 1
+        if not os.path.exists(portfolio_path): return 1
         max_num = 0
         for item in os.listdir(portfolio_path):
             if item.startswith('w') and item[1:].isdigit():
                 num = int(item[1:])
-                if num > max_num:
-                    max_num = num
+                if num > max_num: max_num = num
         return max_num + 1
 
     @staticmethod
-    def create_new_portfolio(uploaded_files: List, description_data: Dict) -> Tuple[bool, str]:
-        folder_name = ""
+    def replace_portfolio_images(folder_name: str, uploaded_files: List) -> Tuple[bool, str]:
         if not Image: 
              return False, "错误: Pillow 库未安装，无法处理图片。"
+        portfolio_path = os.path.join(PortfolioManager.BASE_DIR, PortfolioManager.PORTFOLIO_DIR, folder_name)
+        if not os.path.exists(portfolio_path): # Create folder if replacing images for a newly created portfolio
+             os.makedirs(portfolio_path, exist_ok=True)
+        elif not os.path.isdir(portfolio_path):
+             return False, f"目标路径不是有效文件夹: {portfolio_path}"
+
         try:
-            next_num = PortfolioManager.get_next_portfolio_number()
-            folder_name = f"w{next_num}"
-            portfolio_path = os.path.join(PortfolioManager.BASE_DIR, PortfolioManager.PORTFOLIO_DIR, folder_name)
-            os.makedirs(portfolio_path, exist_ok=True)
-            # print(f"Created folder: {portfolio_path}") # Removed Debug
+            # 1. Delete existing JPG files if folder already existed
+            if os.path.isdir(portfolio_path): # Check again after potential creation
+                # print(f"Deleting existing JPGs in {portfolio_path}...") # Removed Debug
+                for filename in os.listdir(portfolio_path):
+                    if filename.lower().endswith('.jpg'):
+                        try:
+                            os.remove(os.path.join(portfolio_path, filename))
+                        except OSError as e:
+                            print(f"无法删除文件 {filename}: {e}") # Keep error print for file ops
             
+            # 2. Save new images (preserving names)
             saved_filenames = []
             file_map = {} 
             for file_storage in uploaded_files:
@@ -245,45 +227,58 @@ class PortfolioManager:
                     file_storage.save(file_path) 
                     saved_filenames.append(safe_filename)
                     file_map[safe_filename] = file_path
-                    # print(f"Saved image: {file_path}") # Removed Debug
+                    # print(f"Saved new image: {file_path}") # Removed Debug
                 # else:
-                    # print(f"Skipped invalid file: {original_filename}") # Removed Debug
+                    # print(f"Skipped invalid file during replace: {original_filename}") # Removed Debug
 
             if not saved_filenames:
-                shutil.rmtree(portfolio_path)
-                return False, "没有有效的JPG图片被保存"
+                return False, "没有有效的JPG图片被保存以替换旧图片"
 
+            # 3. Process 0.jpg if 0.jpg and 1.jpg exist
             path_0 = file_map.get("0.jpg")
             path_1 = file_map.get("1.jpg")
             processing_done = False
             if path_0 and path_1:
-                # print(f"Attempting to process {path_0} based on {path_1} dimensions...") # Removed Debug
+                # print(f"Processing replaced {path_0} based on {path_1} dimensions...") # Removed Debug
                 try:
                     with Image.open(path_0) as img_0, Image.open(path_1) as img_1:
                         canvas_size = img_1.size
-                        # print(f"  Reference canvas size from {path_1}: {canvas_size}") # Removed Debug
                         processed_img_0 = PortfolioManager._resize_and_center_image(img_0, canvas_size)
                         if processed_img_0: 
                             processed_img_0.save(path_0, format='JPEG', quality=95)
                             processing_done = True
-                            # print(f"  Successfully processed and overwrote {path_0}") # Removed Debug
+                            # print(f"Successfully processed and overwrote replaced {path_0}") # Removed Debug
                         # else:
-                            # print(f"  Image processing returned None for {path_0}. Keeping original.") # Removed Debug
-                except FileNotFoundError as fnf_e:
-                     print(f"  Error opening image file during processing: {fnf_e}. Keeping original.") 
+                            # print(f"Image processing returned None for replaced {path_0}. Keeping original.") # Removed Debug
                 except Exception as img_proc_e:
-                    print(f"  Error processing image {path_0}: {img_proc_e}. Keeping original.") 
-            # elif path_0:
-                 # print(f"  Found {path_0} but not 1.jpg. Skipping processing.") # Removed Debug
-            # else:
-                 # print("  Did not find 0.jpg. Skipping processing.") # Removed Debug
+                    print(f"Error processing replaced image {path_0}: {img_proc_e}. Keeping original.") # Keep error print
+            
+            return True, f"成功替换作品集 {folder_name} 的图片"
+
+        except Exception as e:
+            print(f"替换作品集 {folder_name} 图片时出错: {e}") # Keep error print
+            return False, f"替换图片时出错: {e}"
+
+
+    @staticmethod
+    def create_new_portfolio(uploaded_files: List, description_data: Dict) -> Tuple[bool, str]:
+        folder_name = ""
+        try:
+            next_num = PortfolioManager.get_next_portfolio_number()
+            folder_name = f"w{next_num}"
+            
+            save_success, save_message = PortfolioManager.replace_portfolio_images(folder_name, uploaded_files)
+
+            if not save_success:
+                 if os.path.exists(os.path.join(PortfolioManager.BASE_DIR, PortfolioManager.PORTFOLIO_DIR, folder_name)):
+                     shutil.rmtree(os.path.join(PortfolioManager.BASE_DIR, PortfolioManager.PORTFOLIO_DIR, folder_name))
+                 return False, f"创建作品集 {folder_name} 时保存图片失败: {save_message}"
 
             if PortfolioManager.add_description_entry(folder_name, description_data):
-                # On success, return True and the folder name
-                return True, folder_name
+                return True, f"成功创建作品集 {folder_name} 并添加描述. {save_message}"
             else:
-                # If description fails, still consider portfolio created but return error message
-                return False, f"作品集資料夾 '{folder_name}' 已建立，但新增描述失敗"
+                return False, f"成功创建作品集 {folder_name} ({save_message}) 但添加描述失败"
+
         except Exception as e:
             if folder_name and os.path.exists(os.path.join(PortfolioManager.BASE_DIR, PortfolioManager.PORTFOLIO_DIR, folder_name)):
                  try:
@@ -291,7 +286,8 @@ class PortfolioManager:
                      # print(f"Cleaned up folder {folder_name} due to error.") # Removed Debug
                  except Exception as cleanup_e:
                      print(f"Error during cleanup of folder {folder_name}: {cleanup_e}")
-            return False, f"建立作品集 '{folder_name}' 時發生錯誤: {e}"
+            return False, f"创建作品集 {folder_name} 时出错: {e}"
+
 
     @staticmethod
     def delete_portfolio(folder_name: str) -> Tuple[bool, str]:

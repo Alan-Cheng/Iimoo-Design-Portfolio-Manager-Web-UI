@@ -3,11 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>作品編輯後台</title>
+    <title>作品集展示</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
-        /* Existing styles... */
         .portfolio-card { margin-bottom: 30px; transition: transform 0.3s; height: 100%; display: flex; flex-direction: column; }
         .portfolio-card:hover { transform: translateY(-5px); }
         .portfolio-card .card-img-top { height: 200px; object-fit: cover; }
@@ -21,8 +20,8 @@
         .portfolio-details { font-size: 0.8rem; color: #888; margin-bottom: 0.5rem; }
         .nav-tabs .nav-link.active { font-weight: bold; }
         .delete-btn { padding: 0.2rem 0.5rem; font-size: 0.8rem; }
-        #file-list { margin-top: 10px; font-size: 0.9em; max-height: 150px; overflow-y: auto; border: 1px solid #eee; padding: 5px; }
-        #file-list span { display: block; margin-bottom: 3px; }
+        #file-list, #edit-file-list { margin-top: 10px; font-size: 0.9em; max-height: 150px; overflow-y: auto; border: 1px solid #eee; padding: 5px; }
+        #file-list span, #edit-file-list span { display: block; margin-bottom: 3px; }
         #portfolioModal.modal-view-mode .edit-field,
         #portfolioModal.modal-view-mode .save-edit-btn,
         #portfolioModal.modal-view-mode .cancel-edit-btn { display: none !important; }
@@ -31,37 +30,32 @@
         #portfolioModal.modal-edit-mode .edit-field { display: block !important; }
         #portfolioModal.modal-edit-mode .modal-footer .save-edit-btn,
         #portfolioModal.modal-edit-mode .modal-footer .cancel-edit-btn { display: inline-block !important; }
-        /* Style for collapsible header */
         .collapsible-header { cursor: pointer; }
         .collapsible-header .toggle-icon::before { 
-            content: '\f078'; /* Font Awesome down arrow */
+            content: '\f078'; 
             font-family: 'Font Awesome 6 Free'; 
             font-weight: 900;
             margin-left: 10px;
             transition: transform 0.3s ease;
+            display: inline-block; 
         }
         .collapsible-header[aria-expanded="true"] .toggle-icon::before {
-             transform: rotate(-180deg); /* Rotate arrow up */
+             transform: rotate(-180deg); 
         }
     </style>
 </head>
 <body>
     <div class="container py-4">
-        <h1 class="text-center mb-4">作品集後台</h1>
+        <h1 class="text-center mb-4">作品集展示</h1>
         
         <ul class="nav nav-tabs mb-4">
-            <li class="nav-item"> <a class="nav-link" href="/git">Git 操作</a> </li>
             <li class="nav-item"> <a class="nav-link active" href="/">作品集</a> </li>
         </ul>
-        
+
         <div class="card mb-4">
              <div class="card-header collapsible-header" data-bs-toggle="collapse" data-bs-target="#addPortfolioCollapse" aria-expanded="false" aria-controls="addPortfolioCollapse"> 
-                 <h2 class="mb-0 d-flex justify-content-between align-items-center">
-                     新增作品
-                     <span class="toggle-icon"></span> 
-                 </h2> 
+                 <h2 class="mb-0 d-flex justify-content-between align-items-center"> 新增作品集 <span class="toggle-icon"></span> </h2> 
              </div>
-
              <div class="collapse" id="addPortfolioCollapse"> 
                  <div class="card-body">
                      <form id="upload-form" enctype="multipart/form-data">
@@ -76,7 +70,7 @@
                              <div class="col-md-3 mb-3"> <label for="size" class="form-label">坪數</label> <input type="number" class="form-control" id="size" name="size"> </div>
                              <div class="col-md-3 mb-3"> <label for="type" class="form-label">種類*</label> <select class="form-select" id="type" name="type" required> <option value="" selected disabled>請選擇種類...</option> <option value="住宅空間">住宅空間</option> <option value="商業空間">商業空間</option> <option value="概念/3D">概念/3D</option> </select> </div>
                          </div>
-                         <button type="submit" class="btn btn-primary">上傳並建立作品</button>
+                         <button type="submit" class="btn btn-primary">上傳並創建作品集</button>
                      </form>
                      <div id="upload-result" class="mt-3"></div>
                  </div>
@@ -85,102 +79,112 @@
 
         <hr> 
 
-        <h2 class="mb-3">現有作品</h2>
+        <h2 class="mb-3">現有作品集</h2>
         <div class="row" id="portfolio-container">
-            {/* Portfolio items loaded here */}
         </div>
     </div>
 
-     <div class="modal fade" id="portfolioModal" tabindex="-1">
-         <div class="modal-dialog modal-xl modal-view-mode"> 
-             <div class="modal-content">
-                 <div class="modal-header"> 
-                     <h5 class="modal-title" id="modalTitle">作品集</h5> 
-                     <button type="button" class="btn btn-outline-secondary btn-sm ms-auto edit-mode-btn"> <i class="fas fa-pencil-alt"></i> 編輯作品 </button>
-                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button> 
-                 </div>
-                 <div class="modal-body">
-                     <div id="modal-alert-placeholder"></div> 
-                     <div class="row">
-                         <div class="col-md-8">
-                             <div id="portfolioCarousel" class="carousel slide" data-bs-ride="carousel">
-                                 <div class="carousel-inner" id="carousel-inner"></div>
-                                 <button class="carousel-control-prev" type="button" data-bs-target="#portfolioCarousel" data-bs-slide="prev"> <span class="carousel-control-prev-icon"></span> </button>
-                                 <button class="carousel-control-next" type="button" data-bs-target="#portfolioCarousel" data-bs-slide="next"> <span class="carousel-control-next-icon"></span> </button>
+    <div class="modal fade" id="portfolioModal" tabindex="-1">
+        <div class="modal-dialog modal-xl modal-view-mode"> 
+            <div class="modal-content">
+                <div class="modal-header"> 
+                    <h5 class="modal-title" id="modalTitle">作品集</h5> 
+                    <button type="button" class="btn btn-outline-secondary btn-sm ms-auto edit-mode-btn"> <i class="fas fa-pencil-alt"></i> 編輯 </button>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button> 
+                </div>
+                <div class="modal-body">
+                    <div id="modal-alert-placeholder"></div> 
+                    <div class="row">
+                        <div class="col-md-8">
+                            <div id="portfolioCarousel" class="carousel slide" data-bs-ride="carousel">
+                                <div class="carousel-inner" id="carousel-inner"></div>
+                                <button class="carousel-control-prev" type="button" data-bs-target="#portfolioCarousel" data-bs-slide="prev"> <span class="carousel-control-prev-icon"></span> </button>
+                                <button class="carousel-control-next" type="button" data-bs-target="#portfolioCarousel" data-bs-slide="next"> <span class="carousel-control-next-icon"></span> </button>
+                            </div>
+                             <div class="mt-3 edit-field">
+                                 <label for="modalEditImages" class="form-label">注意：替換圖片需整組替換 (上傳新圖片集)</label>
+                                 <input class="form-control" type="file" id="modalEditImages" name="images" accept=".jpg,.jpeg" multiple>
+                                 <div id="edit-file-list"></div> 
                              </div>
-                         </div>
-                         <div class="col-md-4">
-                             <input type="hidden" id="modalEditFolder"> 
-                             <h4>專案名稱</h4>
-                             <p class="display-field" id="modalProjectNameDisplay"></p>
-                             <input type="text" class="form-control edit-field mb-2" id="modalEditProjectName">
-                             <h4>描述</h4> 
-                             <p class="display-field" id="modalDescriptionDisplay"></p>
-                             <textarea class="form-control edit-field mb-2" id="modalEditDescription" rows="5"></textarea>
-                             <hr>
-                             <p><strong>區域:</strong> <span class="display-field" id="modalAreaDisplay"></span></p>
-                             <input type="text" class="form-control edit-field mb-2" id="modalEditArea">
-                             <p><strong>日期:</strong> <span class="display-field" id="modalDateDisplay"></span></p>
-                             <input type="number" class="form-control edit-field mb-2" id="modalEditDate">
-                             <p><strong>坪數:</strong> <span class="display-field" id="modalSizeDisplay"></span></p>
-                             <input type="number" class="form-control edit-field mb-2" id="modalEditSize">
-                             <p><strong>種類:</strong> <span class="display-field" id="modalTypeDisplay"></span></p>
-                             <select class="form-select edit-field mb-2" id="modalEditType">
-                                 <option value="住宅空間">住宅空間</option> 
-                                 <option value="商業空間">商業空間</option> 
-                                 <option value="概念/3D">概念/3D</option>
-                             </select>
-                         </div>
-                     </div>
-                 </div>
-                  <div class="modal-footer">
-                     <button type="button" class="btn btn-secondary cancel-edit-btn">取消</button> 
-                     <button type="button" class="btn btn-primary save-edit-btn">儲存變更</button>
-                 </div>
-             </div>
-         </div>
-     </div>
+                        </div>
+                        <div class="col-md-4">
+                            <form id="edit-portfolio-form">
+                                <input type="hidden" id="modalEditFolder" name="folder_name"> 
+                                <h4>專案名稱</h4>
+                                <p class="display-field" id="modalProjectNameDisplay"></p>
+                                <input type="text" class="form-control edit-field mb-2" id="modalEditProjectName" name="project_name" required>
+                                <h4>描述</h4> 
+                                <p class="display-field" id="modalDescriptionDisplay"></p>
+                                <textarea class="form-control edit-field mb-2" id="modalEditDescription" name="description" rows="5"></textarea>
+                                <hr>
+                                <p><strong>區域:</strong> <span class="display-field" id="modalAreaDisplay"></span></p>
+                                <input type="text" class="form-control edit-field mb-2" id="modalEditArea" name="area">
+                                <p><strong>日期:</strong> <span class="display-field" id="modalDateDisplay"></span></p>
+                                <input type="number" class="form-control edit-field mb-2" id="modalEditDate" name="date">
+                                <p><strong>坪數:</strong> <span class="display-field" id="modalSizeDisplay"></span></p>
+                                <input type="number" class="form-control edit-field mb-2" id="modalEditSize" name="size">
+                                <p><strong>種類:</strong> <span class="display-field" id="modalTypeDisplay"></span></p>
+                                <select class="form-select edit-field mb-2" id="modalEditType" name="type" required>
+                                    <option value="住宅空間">住宅空間</option> 
+                                    <option value="商業空間">商業空間</option> 
+                                    <option value="概念/3D">概念/3D</option>
+                                </select>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+                 <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary cancel-edit-btn">取消</button> 
+                    <button type="button" class="btn btn-primary save-edit-btn">儲存變更</button>
+                </div>
+            </div>
+        </div>
+    </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
-        // All JavaScript remains the same
         document.addEventListener('DOMContentLoaded', function() {
             const imageUploadInput = document.getElementById('image-upload');
             const fileListDiv = document.getElementById('file-list');
             const uploadForm = document.getElementById('upload-form');
             const portfolioModalElement = document.getElementById('portfolioModal');
             const portfolioModal = new bootstrap.Modal(portfolioModalElement); 
+            const modalEditImagesInput = document.getElementById('modalEditImages');
+            const editFileListDiv = document.getElementById('edit-file-list');
+            const editPortfolioForm = document.getElementById('edit-portfolio-form'); 
 
-            // Set active tab
+            // 設定活動分頁樣式
             const currentPath = window.location.pathname;
             document.querySelectorAll('.nav-link').forEach(link => {
                 link.classList.toggle('active', link.getAttribute('href') === currentPath);
             });
 
-            // Load portfolio items if on portfolio page
+            // 如果在作品集頁面，載入項目
             if (currentPath === '/') {
                 loadPortfolioItems();
             }
 
-            // Upload form handler
+            // 上傳表單處理
             uploadForm.addEventListener('submit', handleUploadSubmit);
 
-            // File input change handler
+            // 檔案輸入變更處理 (建立表單)
             imageUploadInput.addEventListener('change', function() {
-                fileListDiv.innerHTML = ''; 
-                if (this.files.length > 0) {
-                    const list = document.createElement('ul'); list.className = 'list-unstyled mb-0'; 
-                    for (let i = 0; i < this.files.length; i++) { const li = document.createElement('li'); li.textContent = this.files[i].name; list.appendChild(li); }
-                    fileListDiv.appendChild(list);
-                }
+                updateFileList(this, fileListDiv);
+            });
+            // 檔案輸入變更處理 (編輯彈窗)
+            modalEditImagesInput.addEventListener('change', function() {
+                updateFileList(this, editFileListDiv);
             });
 
-            // Modal Edit/Save/Cancel Button Handlers
+
+            // 彈窗 編輯/儲存/取消 按鈕處理
             portfolioModalElement.querySelector('.edit-mode-btn').addEventListener('click', () => {
                 try {
                     portfolioModalElement.classList.remove('modal-view-mode');
                     portfolioModalElement.classList.add('modal-edit-mode');
-                } catch (error) { console.error("Error changing modal classes:", error); }
+                    modalEditImagesInput.value = ''; 
+                    editFileListDiv.innerHTML = ''; 
+                } catch (error) { console.error("切換編輯模式時發生錯誤:", error); }
             });
 
             portfolioModalElement.querySelector('.cancel-edit-btn').addEventListener('click', () => {
@@ -188,12 +192,27 @@
                     portfolioModalElement.classList.remove('modal-edit-mode');
                     portfolioModalElement.classList.add('modal-view-mode');
                     clearModalAlert(); 
-                 } catch (error) { console.error("Error changing modal classes on cancel:", error); }
+                    modalEditImagesInput.value = ''; 
+                    editFileListDiv.innerHTML = ''; 
+                 } catch (error) { console.error("取消編輯時發生錯誤:", error); }
             });
 
             portfolioModalElement.querySelector('.save-edit-btn').addEventListener('click', handleSaveChanges);
 
-            // --- Functions --- 
+            // --- 函數 --- 
+            function updateFileList(inputElement, listDiv) {
+                 listDiv.innerHTML = ''; 
+                 if (inputElement.files.length > 0) {
+                     const list = document.createElement('ul'); list.className = 'list-unstyled mb-0'; 
+                     for (let i = 0; i < inputElement.files.length; i++) { 
+                         const li = document.createElement('li'); 
+                         li.textContent = inputElement.files[i].name; 
+                         list.appendChild(li); 
+                     }
+                     listDiv.appendChild(list);
+                 }
+            }
+
              async function handleUploadSubmit(e) {
                  e.preventDefault();
                  const form = e.target;
@@ -212,13 +231,12 @@
                          loadPortfolioItems(); 
                          form.reset(); 
                          fileListDiv.innerHTML = ''; 
-                         // Optionally collapse the form again after successful upload
                          const collapseElement = document.getElementById('addPortfolioCollapse');
                          const bsCollapse = bootstrap.Collapse.getInstance(collapseElement);
                          if (bsCollapse) { bsCollapse.hide(); }
                      }
                  } catch (error) { resultDiv.innerHTML = `<div class="alert alert-danger">上傳失敗: ${error.message}</div>`;
-                 } finally { btn.disabled = false; btn.textContent = '上傳並建立作品'; }
+                 } finally { btn.disabled = false; btn.textContent = '上傳並創建作品集'; }
              }
 
              async function loadPortfolioItems() {
@@ -226,22 +244,22 @@
                      const response = await fetch('/api/portfolio');
                      const data = await response.json();
                      if (data.success) { renderPortfolio(data.data); } 
-                     else { console.error("无法加载作品集:", data.message); document.getElementById('portfolio-container').innerHTML = '<p class="text-danger">加载作品集失败。</p>'; }
-                 } catch (error) { console.error("加载作品集时出错:", error); document.getElementById('portfolio-container').innerHTML = '<p class="text-danger">加载作品集时发生错误。</p>'; }
+                     else { console.error("無法載入作品集:", data.message); document.getElementById('portfolio-container').innerHTML = '<p class="text-danger">載入作品集失敗。</p>'; }
+                 } catch (error) { console.error("載入作品集時發生錯誤:", error); document.getElementById('portfolio-container').innerHTML = '<p class="text-danger">載入作品集時發生錯誤。</p>'; }
              }
 
              function renderPortfolio(items) {
                  const container = document.getElementById('portfolio-container');
                  container.innerHTML = ''; 
-                 if (items.length === 0) { container.innerHTML = '<p>暂无作品集。</p>'; return; }
+                 if (items.length === 0) { container.innerHTML = '<p>暫無作品集。</p>'; return; }
                  items.forEach(item => {
                      const col = document.createElement('div');
                      col.className = 'col-md-4 col-sm-6 d-flex align-items-stretch'; 
                      const card = document.createElement('div');
                      card.className = 'card portfolio-card';
-                     const descriptionSnippet = item.description ? item.description.replace(/<br\s*\/?>/gi, ' ').substring(0, 80) + '...' : '暂无描述';
+                     const descriptionSnippet = item.description ? item.description.replace(/<br\s*\/?>/gi, ' ').substring(0, 80) + '...' : '暫無描述';
                      card.innerHTML = `
-                         <img src="${item.images[0].path}" class="card-img-top" alt="${item.name}">
+                         <img src="${item.images.length > 0 ? item.images[0].path : '/placeholder.jpg'}" class="card-img-top" alt="${item.name}">
                          <div class="card-body">
                              <h5 class="card-title portfolio-title">${item.name}</h5>
                              <div class="portfolio-details">
@@ -254,7 +272,7 @@
                          </div>
                          <div class="card-footer">
                               <button class="btn btn-primary btn-sm view-btn">查看詳情</button>
-                              <button class="btn btn-danger btn-sm delete-btn" data-folder="${item.folder}"> <i class="fas fa-trash-alt"></i> 删除 </button>
+                              <button class="btn btn-danger btn-sm delete-btn" data-folder="${item.folder}"> <i class="fas fa-trash-alt"></i> 刪除 </button>
                          </div>
                      `;
                      card.querySelector('.view-btn').addEventListener('click', () => showPortfolioModal(item)); 
@@ -267,15 +285,15 @@
              async function handleDeleteClick(event) {
                  const btn = event.currentTarget;
                  const folderName = btn.dataset.folder;
-                 if (!folderName) { alert('无法获取作品集文件夹名称'); return; }
-                 if (!confirm(`确定要删除作品集 ${folderName} 吗？此操作无法撤销。`)) { return; }
-                 btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 删除中...';
+                 if (!folderName) { alert('無法獲取作品集資料夾名稱'); return; }
+                 if (!confirm(`確定要刪除作品集 ${folderName} 嗎？此操作無法撤銷。`)) { return; }
+                 btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 刪除中...';
                  try {
                      const response = await fetch('/api/portfolio/delete', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ folder_name: folderName }) });
                      const result = await response.json();
                      if (result.success) { alert(result.message); loadPortfolioItems(); } 
-                     else { alert(`删除失败: ${result.message}`); btn.disabled = false; btn.innerHTML = '<i class="fas fa-trash-alt"></i> 删除'; }
-                 } catch (error) { alert(`删除时发生错误: ${error.message}`); btn.disabled = false; btn.innerHTML = '<i class="fas fa-trash-alt"></i> 删除'; }
+                     else { alert(`刪除失敗: ${result.message}`); btn.disabled = false; btn.innerHTML = '<i class="fas fa-trash-alt"></i> 刪除'; }
+                 } catch (error) { alert(`刪除時發生錯誤: ${error.message}`); btn.disabled = false; btn.innerHTML = '<i class="fas fa-trash-alt"></i> 刪除'; }
              }
 
              function showPortfolioModal(item) {
@@ -284,7 +302,7 @@
                  clearModalAlert();
                  document.getElementById('modalTitle').textContent = item.name;
                  document.getElementById('modalProjectNameDisplay').textContent = item.name;
-                 document.getElementById('modalDescriptionDisplay').innerHTML = item.description ? item.description.replace(/\n/g, '<br>') : '暂无描述'; 
+                 document.getElementById('modalDescriptionDisplay').innerHTML = item.description ? item.description.replace(/\n/g, '<br>') : '暫無描述'; 
                  document.getElementById('modalAreaDisplay').textContent = item.area || 'N/A';
                  document.getElementById('modalDateDisplay').textContent = item.date || 'N/A';
                  document.getElementById('modalSizeDisplay').textContent = item.size ? `${item.size}坪` : 'N/A';
@@ -296,59 +314,76 @@
                  document.getElementById('modalEditDate').value = item.date || '';
                  document.getElementById('modalEditSize').value = item.size || '';
                  document.getElementById('modalEditType').value = item.type || '';
+                 modalEditImagesInput.value = ''; 
+                 editFileListDiv.innerHTML = ''; 
+
                  const carouselInner = document.getElementById('carousel-inner');
                  carouselInner.innerHTML = '';
-                 const sortedImages = item.images.sort((a, b) => {
-                      const numA = parseInt(a.name.split('.')[0]); const numB = parseInt(b.name.split('.')[0]);
-                      if (!isNaN(numA) && !isNaN(numB)) return numA - numB;
-                      return a.name.localeCompare(b.name); 
-                 });
-                 sortedImages.forEach((image, index) => {
-                     const itemDiv = document.createElement('div');
-                     itemDiv.className = `carousel-item ${index === 0 ? 'active' : ''}`;
-                     itemDiv.innerHTML = `
-                         <img src="${image.path}" class="d-block w-100" alt="${image.name}">
-                         <div class="carousel-caption d-none d-md-block"> <p class="mb-0">${image.name}</p> </div>
-                     `;
-                     carouselInner.appendChild(itemDiv);
-                 });
+                 if (item.images && item.images.length > 0) {
+                     const sortedImages = item.images.sort((a, b) => {
+                          const numA = parseInt(a.name.split('.')[0]); const numB = parseInt(b.name.split('.')[0]);
+                          if (!isNaN(numA) && !isNaN(numB)) return numA - numB;
+                          return a.name.localeCompare(b.name); 
+                     });
+                     sortedImages.forEach((image, index) => {
+                         const itemDiv = document.createElement('div');
+                         itemDiv.className = `carousel-item ${index === 0 ? 'active' : ''}`;
+                         itemDiv.innerHTML = `
+                             <img src="${image.path}" class="d-block w-100" alt="${image.name}">
+                             <div class="carousel-caption d-none d-md-block"> <p class="mb-0">${image.name}</p> </div>
+                         `;
+                         carouselInner.appendChild(itemDiv);
+                     });
+                 } else {
+                     carouselInner.innerHTML = '<div class="carousel-item active"><p class="text-center p-5">此作品集沒有圖片</p></div>';
+                 }
                  portfolioModal.show();
              }
 
              async function handleSaveChanges() {
                  const btn = portfolioModalElement.querySelector('.save-edit-btn');
-                 const folderName = document.getElementById('modalEditFolder').value;
-                 const updateData = {
-                     project_name: document.getElementById('modalEditProjectName').value,
-                     description: document.getElementById('modalEditDescription').value,
-                     area: document.getElementById('modalEditArea').value,
-                     date: document.getElementById('modalEditDate').value,
-                     size: document.getElementById('modalEditSize').value,
-                     type: document.getElementById('modalEditType').value
-                 };
-                 if (!folderName) { showModalAlert('错误：无法获取作品集标识符。', 'danger'); return; }
-                 if (!updateData.project_name.trim()) { showModalAlert('错误：专案名称不能为空。', 'danger'); document.getElementById('modalEditProjectName').focus(); return; }
+                 const formElement = document.getElementById('edit-portfolio-form'); 
+                 const formData = new FormData(formElement); 
+                 const folderName = document.getElementById('modalEditFolder').value; 
+                 formData.append('folder_name', folderName); 
+
+                 const newImageFiles = modalEditImagesInput.files;
+                 if (newImageFiles.length > 0) {
+                     for (let i = 0; i < newImageFiles.length; i++) {
+                         formData.append('images', newImageFiles[i]);
+                     }
+                 } 
+
+                 if (!formData.get('project_name').trim()) { showModalAlert('錯誤：專案名稱不能為空。', 'danger'); document.getElementById('modalEditProjectName').focus(); return; }
+                 if (formData.get('type') === "") { showModalAlert('錯誤：請選擇作品種類。', 'danger'); document.getElementById('modalEditType').focus(); return; }
+
                  btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 儲存中...'; clearModalAlert();
+                 
                  try {
-                     const response = await fetch('/api/portfolio/update', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ folder_name: folderName, update_data: updateData }) });
+                     const response = await fetch('/api/portfolio/update', { method: 'POST', body: formData });
                      const result = await response.json();
+                     
                      if (result.success) {
                          showModalAlert(result.message, 'success');
                          portfolioModalElement.classList.remove('modal-edit-mode');
                          portfolioModalElement.classList.add('modal-view-mode');
                          loadPortfolioItems(); 
-                         document.getElementById('modalTitle').textContent = updateData.project_name;
-                         document.getElementById('modalProjectNameDisplay').textContent = updateData.project_name;
-                         document.getElementById('modalDescriptionDisplay').innerHTML = updateData.description ? updateData.description.replace(/\n/g, '<br>') : '暂无描述';
-                         document.getElementById('modalAreaDisplay').textContent = updateData.area || 'N/A';
-                         document.getElementById('modalDateDisplay').textContent = updateData.date || 'N/A';
-                         document.getElementById('modalSizeDisplay').textContent = updateData.size ? `${updateData.size}坪` : 'N/A';
-                         document.getElementById('modalTypeDisplay').textContent = updateData.type || 'N/A';
-                     } else { showModalAlert(`儲存失敗: ${result.message}`, 'danger'); }
+                         document.getElementById('modalTitle').textContent = formData.get('project_name');
+                         document.getElementById('modalProjectNameDisplay').textContent = formData.get('project_name');
+                         document.getElementById('modalDescriptionDisplay').innerHTML = formData.get('description') ? formData.get('description').replace(/\n/g, '<br>') : '暫無描述';
+                         document.getElementById('modalAreaDisplay').textContent = formData.get('area') || 'N/A';
+                         document.getElementById('modalDateDisplay').textContent = formData.get('date') || 'N/A';
+                         document.getElementById('modalSizeDisplay').textContent = formData.get('size') ? `${formData.get('size')}坪` : 'N/A';
+                         document.getElementById('modalTypeDisplay').textContent = formData.get('type') || 'N/A';
+                     } else { 
+                         showModalAlert(`儲存失敗: ${result.message}`, 'danger'); 
+                     }
                  } catch (error) { 
-                     console.error("Save error:", error); 
+                     console.error("儲存錯誤:", error); 
                      showModalAlert(`儲存時發生錯誤: ${error.message}`, 'danger');
-                 } finally { btn.disabled = false; btn.innerHTML = '儲存變更'; }
+                 } finally { 
+                     btn.disabled = false; btn.innerHTML = '儲存變更'; 
+                 }
              }
 
              function showModalAlert(message, type = 'info') {
@@ -360,6 +395,7 @@
                   const placeholder = document.getElementById('modal-alert-placeholder');
                   if (placeholder) placeholder.innerHTML = ''; 
              }
+
         });
     </script>
 </body>
