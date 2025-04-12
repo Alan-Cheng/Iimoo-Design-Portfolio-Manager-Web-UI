@@ -197,48 +197,57 @@ class PortfolioManager:
     @staticmethod
     def replace_portfolio_images(folder_name: str, uploaded_files: List) -> Tuple[bool, str]:
         if not Image: 
-             return False, "錯誤: Pillow 未安装，無法處理圖片。"
+            return False, "錯誤: Pillow 未安装，無法處理圖片。"
+        
         portfolio_path = os.path.join(PortfolioManager.BASE_DIR, PortfolioManager.PORTFOLIO_DIR, folder_name)
-        if not os.path.exists(portfolio_path): # Create folder if replacing images for a newly created portfolio
-             os.makedirs(portfolio_path, exist_ok=True)
+        if not os.path.exists(portfolio_path):
+            os.makedirs(portfolio_path, exist_ok=True)
         elif not os.path.isdir(portfolio_path):
-             return False, f"目標路徑並非資料夾: {portfolio_path}"
+            return False, f"目標路徑並非資料夾: {portfolio_path}"
 
         try:
-            # 1. Delete existing JPG files if folder already existed
-            if os.path.isdir(portfolio_path): # Check again after potential creation
-                # print(f"Deleting existing JPGs in {portfolio_path}...") # Removed Debug
-                for filename in os.listdir(portfolio_path):
-                    if filename.lower().endswith('.jpg'):
-                        try:
-                            os.remove(os.path.join(portfolio_path, filename))
-                        except OSError as e:
-                            print(f"無法刪除檔案 {filename}: {e}") # Keep error print for file ops
+            # 1. Delete existing JPG files
+            for filename in os.listdir(portfolio_path):
+                if filename.lower().endswith('.jpg'):
+                    try:
+                        os.remove(os.path.join(portfolio_path, filename))
+                    except OSError as e:
+                        print(f"無法刪除檔案 {filename}: {e}")
             
-            # 2. Save new images (preserving names)
-            saved_filenames = []
-            file_map = {} 
+            # 2. 判斷是否全部為編號命名的圖片（例如 0.jpg、1.jpg）
+            is_all_numbered = True
             for file_storage in uploaded_files:
                 original_filename = file_storage.filename
                 if original_filename and original_filename.lower().endswith('.jpg'):
-                    safe_filename = original_filename 
+                    name_part = os.path.splitext(original_filename)[0]
+                    if not name_part.isdigit():
+                        is_all_numbered = False
+                        break
+
+            # 3. 儲存圖片
+            saved_filenames = []
+            file_map = {}
+            for idx, file_storage in enumerate(uploaded_files):
+                original_filename = file_storage.filename
+                if original_filename and original_filename.lower().endswith('.jpg'):
+                    if is_all_numbered:
+                        safe_filename = original_filename  # 保留原名
+                    else:
+                         return False, "請將jpg圖檔以數字編號（0.jpg、1.jpg...）， 規則：0為平面圖，往後為實景圖。"
+
                     file_path = os.path.join(portfolio_path, safe_filename)
-                    file_storage.save(file_path) 
+                    file_storage.save(file_path)
                     saved_filenames.append(safe_filename)
                     file_map[safe_filename] = file_path
-                    # print(f"Saved new image: {file_path}") # Removed Debug
-                # else:
-                    # print(f"Skipped invalid file during replace: {original_filename}") # Removed Debug
 
             if not saved_filenames:
                 return False, "無有效圖片檔案上傳，無法替換圖片"
 
-            # 3. Process 0.jpg if 0.jpg and 1.jpg exist
+            # 4. Process 0.jpg if 0.jpg and 1.jpg exist
             path_0 = file_map.get("0.jpg")
             path_1 = file_map.get("1.jpg")
             processing_done = False
             if path_0 and path_1:
-                # print(f"Processing replaced {path_0} based on {path_1} dimensions...") # Removed Debug
                 try:
                     with Image.open(path_0) as img_0, Image.open(path_1) as img_1:
                         canvas_size = img_1.size
@@ -246,18 +255,14 @@ class PortfolioManager:
                         if processed_img_0: 
                             processed_img_0.save(path_0, format='JPEG', quality=95)
                             processing_done = True
-                            # print(f"Successfully processed and overwrote replaced {path_0}") # Removed Debug
-                        # else:
-                            # print(f"Image processing returned None for replaced {path_0}. Keeping original.") # Removed Debug
                 except Exception as img_proc_e:
-                    print(f"Error processing replaced image {path_0}: {img_proc_e}. Keeping original.") # Keep error print
+                    print(f"Error processing replaced image {path_0}: {img_proc_e}. Keeping original.")
             
             return True, f"圖片上傳成功"
 
         except Exception as e:
-            print(f"替換作品 {folder_name} 圖片時出錯: {e}") # Keep error print
+            print(f"替換作品 {folder_name} 圖片時出錯: {e}")
             return False, f"替換圖片時出現錯誤: {e}"
-
 
     @staticmethod
     def create_new_portfolio(uploaded_files: List, description_data: Dict) -> Tuple[bool, str]:
@@ -271,7 +276,7 @@ class PortfolioManager:
             if not save_success:
                  if os.path.exists(os.path.join(PortfolioManager.BASE_DIR, PortfolioManager.PORTFOLIO_DIR, folder_name)):
                      shutil.rmtree(os.path.join(PortfolioManager.BASE_DIR, PortfolioManager.PORTFOLIO_DIR, folder_name))
-                 return False, f"建立作品《{description_data['project_name']} 》時保存圖片失敗: {save_message}"
+                 return False, f"建立作品《{description_data['project_name']} 》時上傳圖片失敗: {save_message}"
 
             if PortfolioManager.add_description_entry(folder_name, description_data):
                 return True, f"成功建立作品《{description_data['project_name']} 》並新增作品描述. {save_message}"
