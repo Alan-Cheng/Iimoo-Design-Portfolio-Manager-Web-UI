@@ -72,11 +72,8 @@
     *   執行以下指令：
     ```bash
     # 將 your_actual_github_token 替換成你的 GitHub PAT
-    docker run -p 5000:5000 \
-    -e GITHUB_TOKEN=《YourGitHubPersonalAccessTokenHere》 \
-    -e GITHUB_REPO_URL=《YourGitHubRepoURL》 \
-    -e GITHUB_REPO_NAME=《YourGitHubRepoName》 \
-    --name portfolio-app portfolio-manager-app
+    docker run -p 5000:5000 -e GITHUB_TOKEN=《YourGitHubPersonalAccessTokenHere》 -e GITHUB_REPO_URL=《YourGitHubRepoURL》 -e GITHUB_REPO_NAME=《YourGitHubRepoName》 --name portfolio-app portfolio-manager-app
+
     ```
     *   `-p 5000:5000`: 將主機的 Port 5000 映射到容器的 Port 5000。
     *   `-e GITHUB_TOKEN="..."`: **必須**透過環境變數將您的 GitHub Token 傳遞給容器。

@@ -59,6 +59,8 @@ class GitOperations:
         """Clone the fixed repository with authentication"""
         # Clone needs to happen *outside* the repo path initially
         target_parent_dir = os.path.dirname(GitOperations.REPO_PATH) # e.g., 'resources'
+        if not os.path.exists(target_parent_dir):
+            os.makedirs(target_parent_dir)
         target_repo_name = os.path.basename(GitOperations.REPO_PATH) # e.g., 'remote-access-test'
         
         if os.path.exists(GitOperations.REPO_PATH):
