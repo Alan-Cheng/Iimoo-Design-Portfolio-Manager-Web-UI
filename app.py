@@ -78,7 +78,7 @@ def upload_portfolio():
         commit_message = f"Add portfolio: {description_data.get('project_name', 'New Portfolio')}"
         thread = threading.Thread(target=run_git_push, args=(commit_message,))
         thread.start()
-        message += " (正在背景同步到 GitHub...)" 
+        message += " (正在背景上傳到 GitHub...)" 
 
     return jsonify({'success': success, 'message': message})
 
@@ -117,13 +117,13 @@ def update_portfolio():
     final_success = desc_update_success 
     final_message = desc_update_message
     if image_replace_message: 
-        final_message += f" 图片替换状态: {image_replace_message}"
+        final_message += f" 圖片替換狀態: {image_replace_message}"
 
     if desc_update_success or (images_replaced and image_replace_success):
          commit_message = f"Update portfolio: {folder_name} ({update_data.get('project_name', '')})"
          thread = threading.Thread(target=run_git_push, args=(commit_message,))
          thread.start()
-         final_message += " (正在背景同步到 GitHub...)"
+         final_message += " (正在背景上傳到 GitHub...)"
 
     return jsonify({'success': final_success, 'message': final_message})
 
@@ -141,7 +141,7 @@ def delete_portfolio():
         commit_message = f"Delete portfolio: {folder_name}"
         thread = threading.Thread(target=run_git_push, args=(commit_message,))
         thread.start()
-        message += " (正在背景同步到 GitHub...)" 
+        message += " (正在背景上傳到 GitHub...)" 
 
     return jsonify({'success': success, 'message': message})
 
