@@ -206,19 +206,19 @@ class PortfolioManager:
             return False, f"目標路徑並非資料夾: {portfolio_path}"
 
         try:
-            # 1. Delete existing JPG files
+            # 1. Delete existing files
             for filename in os.listdir(portfolio_path):
-                if filename.lower().endswith('.jpg'):
+                if filename.lower().endswith(('.jpg', '.png', '.webp')):
                     try:
                         os.remove(os.path.join(portfolio_path, filename))
                     except OSError as e:
                         print(f"無法刪除檔案 {filename}: {e}")
             
-            # 2. 判斷是否全部為編號命名的圖片（例如 0.jpg、1.jpg）
+            # 2. 判斷是否全部為編號命名的圖片
             is_all_numbered = True
             for file_storage in uploaded_files:
                 original_filename = file_storage.filename
-                if original_filename and original_filename.lower().endswith('.jpg'):
+                if original_filename and original_filename.lower().endswith(('.jpg', '.png')):
                     name_part = os.path.splitext(original_filename)[0]
                     if not name_part.isdigit():
                         is_all_numbered = False
@@ -229,11 +229,11 @@ class PortfolioManager:
             file_map = {}
             for idx, file_storage in enumerate(uploaded_files):
                 original_filename = file_storage.filename
-                if original_filename and original_filename.lower().endswith('.jpg'):
+                if original_filename and original_filename.lower().endswith(('.jpg', '.png')):
                     if is_all_numbered:
                         safe_filename = original_filename  # 保留原名
                     else:
-                         return False, "請將jpg圖檔以數字編號（0.jpg、1.jpg...）， 規則：0為平面圖，往後為實景圖。"
+                         return False, "請將圖檔以數字編號（0.jpg、1.jpg...）， 規則：0為平面圖，往後為實景圖。"
 
                     file_path = os.path.join(portfolio_path, safe_filename)
                     file_storage.save(file_path)
@@ -244,8 +244,8 @@ class PortfolioManager:
                 return False, "無有效圖片檔案上傳，無法替換圖片"
 
             # 4. Process 0.jpg if 0.jpg and 1.jpg exist
-            path_0 = file_map.get("0.jpg")
-            path_1 = file_map.get("1.jpg")
+            path_0 = file_map.get("0.jpg") or file_map.get("0.png")
+            path_1 = file_map.get("1.jpg") or file_map.get("1.png")
             processing_done = False
             if path_0 and path_1:
                 try:
@@ -253,10 +253,24 @@ class PortfolioManager:
                         canvas_size = img_1.size
                         processed_img_0 = PortfolioManager._resize_and_center_image(img_0, canvas_size)
                         if processed_img_0: 
-                            processed_img_0.save(path_0, format='JPEG', quality=95)
+                            # 轉換為 webp
+                            webp_path = os.path.splitext(path_0)[0] + '.webp'
+                            processed_img_0.save(webp_path, format='WEBP', quality=75)
+                            os.remove(path_0)  # 刪除原始檔案
                             processing_done = True
                 except Exception as img_proc_e:
                     print(f"Error processing replaced image {path_0}: {img_proc_e}. Keeping original.")
+            
+            # 5. 將其他圖片轉換為 webp
+            for filename, filepath in file_map.items():
+                if filename != "0.jpg" and filename != "0.png":  # 跳過已經處理過的 0.jpg/0.png
+                    try:
+                        with Image.open(filepath) as img:
+                            webp_path = os.path.splitext(filepath)[0] + '.webp'
+                            img.save(webp_path, format='WEBP', quality=75)
+                            os.remove(filepath)  # 刪除原始檔案
+                    except Exception as e:
+                        print(f"Error converting {filename} to webp: {e}")
             
             return True, f"圖片上傳成功"
 
