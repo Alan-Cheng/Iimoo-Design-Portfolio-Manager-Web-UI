@@ -157,5 +157,5 @@ if __name__ == '__main__':
              
     # Bind to 0.0.0.0 to be accessible from outside the container
     # Use os.environ.get('PORT', 5000) for flexibility if needed later
-    port = int(os.environ.get("PORT", 5000))
+    port = int(os.environ.get("PORT", 30678))
     app.run(host='0.0.0.0', port=port, debug=False) # Disable debug mode in Docker
