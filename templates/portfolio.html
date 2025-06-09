@@ -413,7 +413,7 @@
                 if (form.type.value === "") { alert('請選擇作品種類'); form.type.focus(); return; }
                 const formData = new FormData(form);
                 const files = imageUploadInput.files;
-                if (files.length === 0) { alert('請至少選擇一張JPG圖片'); return; }
+                if (files.length === 0) { alert('請至少選擇一張圖片'); return; }
                 const btn = form.querySelector('button[type="submit"]');
                 const resultDiv = document.getElementById('upload-result');
                 btn.disabled = true; btn.textContent = '上傳中...'; resultDiv.innerHTML = '';

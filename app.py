@@ -60,9 +60,9 @@ def upload_portfolio():
     uploaded_files = request.files.getlist('images') 
     if not uploaded_files or all(f.filename == '' for f in uploaded_files):
          return jsonify({'success': False, 'message': '沒有選擇任何檔案'})
-    valid_files = [f for f in uploaded_files if f and f.filename.lower().endswith('.jpg')]
+    valid_files = [f for f in uploaded_files if f and f.filename.lower().endswith(('.jpg', '.png'))]
     if not valid_files:
-         return jsonify({'success': False, 'message': '上傳的檔案中沒有有效的JPG圖片'})
+         return jsonify({'success': False, 'message': '上傳的檔案中沒有有效的JPG或PNG圖片'})
     description_data = {
         "project_name": request.form.get("project_name", ""),
         "description": request.form.get("description", ""),

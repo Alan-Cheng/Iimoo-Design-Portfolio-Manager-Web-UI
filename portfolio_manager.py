@@ -169,7 +169,7 @@ class PortfolioManager:
             filenames_sorted = sorted(os.listdir(dir_path), key=lambda name: int(name.split('.')[0]) if name.split('.')[0].isdigit() else float('inf'))
             for filename in filenames_sorted: 
                 filepath = os.path.join(dir_path, filename)
-                if os.path.isfile(filepath) and filename.lower().endswith('.jpg'):
+                if os.path.isfile(filepath) and filename.lower().endswith('.webp'):
                     images.append({ 'name': filename, 'path': f"/assets/img/portfolio/{item_dir}/{filename}" })
             if images:
                 desc_data = descriptions.get(item_dir, {}) 
