@@ -102,7 +102,39 @@ def update_portfolio():
     
     if 'images' in request.files:
         uploaded_files = request.files.getlist('images')
-        valid_files = [f for f in uploaded_files if f and f.filename != '' and f.filename.lower().endswith('.jpg')]
+        # 檢查檔案類型和命名
+        valid_files = []
+        file_numbers = set()
+        
+        for f in uploaded_files:
+            if not f or f.filename == '':
+                continue
+                
+            # 檢查檔案類型
+            if not f.filename.lower().endswith(('.jpg', '.jpeg', '.png')):
+                return jsonify({'success': False, 'message': f'檔案包含無效的圖片格式 (只接受 JPG/PNG)'})
+            
+            # 檢查檔案命名 (必須是數字開頭)
+            name_part = os.path.splitext(f.filename)[0]
+            if not name_part.isdigit():
+                return jsonify({'success': False, 'message': f'檔案必須符合命名規則，0為平面圖，往後為實景圖 \n (例如: 0.jpg, 1.jpg, 2.jpg...)'})
+            
+            file_numbers.add(int(name_part))
+            valid_files.append(f)
+            
+        # 檢查編號連續性
+        if file_numbers:
+            min_num = min(file_numbers)
+            max_num = max(file_numbers)
+            missing_numbers = set(range(min_num, max_num + 1)) - file_numbers
+            
+            if missing_numbers:
+                missing_list = sorted(list(missing_numbers))
+                return jsonify({
+                    'success': False, 
+                    'message': f'圖片編號不連續，缺少編號: {", ".join(map(str, missing_list))}'
+                })
+            
         if valid_files: 
             images_replaced = True
             print(f"Replacing images for {folder_name}...")
@@ -114,12 +146,13 @@ def update_portfolio():
 
     desc_update_success, desc_update_message = PortfolioManager.update_description_entry(folder_name, update_data)
 
-    final_success = desc_update_success 
+    # 更新成功與否需要同時考慮描述更新和圖片替換
+    final_success = desc_update_success and (not images_replaced or image_replace_success)
     final_message = desc_update_message
     if image_replace_message: 
         final_message += f" 圖片替換狀態: {image_replace_message}"
 
-    if desc_update_success or (images_replaced and image_replace_success):
+    if final_success:
          commit_message = f"Update portfolio: {folder_name} ({update_data.get('project_name', '')})"
          thread = threading.Thread(target=run_git_push, args=(commit_message,))
          thread.start()
