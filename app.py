@@ -65,10 +65,11 @@ def upload_portfolio():
          return jsonify({'success': False, 'message': '上傳的檔案中沒有有效的JPG或PNG圖片'})
     description_data = {
         "project_name": request.form.get("project_name", ""),
-        "description": request.form.get("description", ""),
-        "area": request.form.get("area", ""),
-        "date": request.form.get("date", ""),
+        "style": request.form.get("style", ""),
+        "condition": request.form.get("condition", ""),
+        "layout": request.form.get("layout", ""),
         "size": request.form.get("size", ""),
+        "location": request.form.get("location", ""),
         "type": request.form.get("type", "")
     }
     
@@ -89,10 +90,11 @@ def update_portfolio():
         return jsonify({'success': False, 'message': '缺少作品集資料夾名稱 (folder_name)'})
     update_data = {
         "project_name": request.form.get("project_name", ""),
-        "description": request.form.get("description", ""),
-        "area": request.form.get("area", ""),
-        "date": request.form.get("date", ""),
+        "style": request.form.get("style", ""),
+        "condition": request.form.get("condition", ""),
+        "layout": request.form.get("layout", ""),
         "size": request.form.get("size", ""),
+        "location": request.form.get("location", ""),
         "type": request.form.get("type", "")
     }
 

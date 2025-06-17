@@ -84,6 +84,9 @@ class PortfolioManager:
     @staticmethod
     def add_description_entry(folder_name: str, data: Dict) -> bool:
         try:
+            # 確保目錄存在
+            os.makedirs(os.path.dirname(PortfolioManager.DESCRIPTION_FILE), exist_ok=True)
+            
             entries = []
             if os.path.exists(PortfolioManager.DESCRIPTION_FILE):
                 try:
@@ -99,10 +102,11 @@ class PortfolioManager:
             new_entry = {
                 "專案名": data.get("project_name", ""),
                 "圖片連結": f"./assets/img/portfolio/{folder_name}/",
-                "描述": data.get("description", ""),
-                "區域": data.get("area", ""),
-                "日期": data.get("date", ""),
+                "風格": data.get("style", ""),
+                "屋況": data.get("condition", ""),
+                "格局": data.get("layout", ""),
                 "坪數": data.get("size", ""),
+                "地點": data.get("location", ""),
                 "種類": data.get("type", "")
             }
             entries = [e for e in entries if e.get("圖片連結", "").strip('/').split('/')[-1] != folder_name]
@@ -118,29 +122,46 @@ class PortfolioManager:
     @staticmethod
     def update_description_entry(folder_name: str, data: Dict) -> Tuple[bool, str]:
         try:
+            # 確保目錄存在
+            os.makedirs(os.path.dirname(PortfolioManager.DESCRIPTION_FILE), exist_ok=True)
+            
             entries = []
             if not os.path.exists(PortfolioManager.DESCRIPTION_FILE):
                 return False, "作品描述json檔案不存在"
+            
+            # 讀取現有資料
             with open(PortfolioManager.DESCRIPTION_FILE, 'r', encoding='utf-8') as f:
                 entries = json.load(f)
+            
             if not isinstance(entries, list):
                 return False, "作品描述json檔案格式错误 (非陣列)"
+            
+            # 尋找並更新對應的項目
             found = False
             for i, entry in enumerate(entries):
                 entry_folder = entry.get("圖片連結", "").strip('/').split('/')[-1]
                 if entry_folder == folder_name:
-                    entries[i]["專案名"] = data.get("project_name", entry.get("專案名", ""))
-                    entries[i]["描述"] = data.get("description", entry.get("描述", ""))
-                    entries[i]["區域"] = data.get("area", entry.get("區域", ""))
-                    entries[i]["日期"] = data.get("date", entry.get("日期", ""))
-                    entries[i]["坪數"] = data.get("size", entry.get("坪數", ""))
-                    entries[i]["種類"] = data.get("type", entry.get("種類", ""))
+                    # 更新所有欄位，保留原始值作為預設值
+                    entries[i] = {
+                        "專案名": data.get("project_name", entry.get("專案名", "")),
+                        "圖片連結": entry.get("圖片連結", f"./assets/img/portfolio/{folder_name}/"),
+                        "風格": data.get("style", entry.get("風格", "")),
+                        "屋況": data.get("condition", entry.get("屋況", "")),
+                        "格局": data.get("layout", entry.get("格局", "")),
+                        "坪數": data.get("size", entry.get("坪數", "")),
+                        "地點": data.get("location", entry.get("地點", "")),
+                        "種類": data.get("type", entry.get("種類", ""))
+                    }
                     found = True
                     break
+            
             if not found:
                 return False, f"未在作品描述json檔案中找到作品集 {folder_name} - {data.get('project_name', '')}"
+            
+            # 寫入更新後的資料
             with open(PortfolioManager.DESCRIPTION_FILE, 'w', encoding='utf-8') as f:
                 json.dump(entries, f, ensure_ascii=False, indent=4)
+            
             return True, f"成功更新作品《{data.get('project_name', '')}》的描述"
         except json.JSONDecodeError:
             return False, "作品描述json檔案格式错误"
@@ -176,8 +197,11 @@ class PortfolioManager:
                 temp_items.append({
                     'name': desc_data.get("專案名", f"作品集 {item_dir[1:]}"), 
                     'folder': item_dir, 'folder_num': folder_num, 'images': images,
-                    'description': desc_data.get("描述", ""), 'area': desc_data.get("區域", ""),
-                    'date': desc_data.get("日期", ""), 'size': desc_data.get("坪數", ""),
+                    'style': desc_data.get("風格", ""),
+                    'condition': desc_data.get("屋況", ""),
+                    'layout': desc_data.get("格局", ""),
+                    'size': desc_data.get("坪數", ""),
+                    'location': desc_data.get("地點", ""),
                     'type': desc_data.get("種類", "")
                 })
         items = sorted(temp_items, key=lambda x: x['folder_num'], reverse=True)

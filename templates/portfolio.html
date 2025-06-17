@@ -217,17 +217,20 @@
                                 <div id="file-list"></div>
                             </div>
                         </div>
-                        <div class="mb-3"> <label for="description" class="form-label">描述</label> <textarea
-                                class="form-control" id="description" name="description" rows="3"></textarea> </div>
                         <div class="row">
-                            <div class="col-md-3 mb-3"> <label for="area" class="form-label">區域</label> <input
-                                    type="text" class="form-control" id="area" name="area"> </div>
-                            <div class="col-md-3 mb-3"> <label for="date" class="form-label">日期 (年)</label> <input
-                                    type="number" class="form-control" id="date" name="date" placeholder="例如: 2024">
-                            </div>
+                            <div class="col-md-3 mb-3"> <label for="style" class="form-label">風格</label> <input
+                                    type="text" class="form-control" id="style" name="style"> </div>
+                            <div class="col-md-3 mb-3"> <label for="condition" class="form-label">屋況</label> <input
+                                    type="text" class="form-control" id="condition" name="condition"> </div>
+                            <div class="col-md-3 mb-3"> <label for="layout" class="form-label">格局</label> <input
+                                    type="text" class="form-control" id="layout" name="layout"> </div>
                             <div class="col-md-3 mb-3"> <label for="size" class="form-label">坪數</label> <input
-                                    type="number" class="form-control" id="size" name="size"> </div>
-                            <div class="col-md-3 mb-3"> <label for="type" class="form-label">種類*</label> <select
+                                    type="text" class="form-control" id="size" name="size"> </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6 mb-3"> <label for="location" class="form-label">地點</label> <input
+                                    type="text" class="form-control" id="location" name="location"> </div>
+                            <div class="col-md-6 mb-3"> <label for="type" class="form-label">種類*</label> <select
                                     class="form-select" id="type" name="type" required>
                                     <option value="" selected disabled>請選擇種類...</option>
                                     <option value="住宅空間">住宅空間</option>
@@ -283,19 +286,17 @@
                                 <p class="display-field" id="modalProjectNameDisplay"></p>
                                 <input type="text" class="form-control edit-field mb-2" id="modalEditProjectName"
                                     name="project_name" required>
-                                <h4>描述</h4>
-                                <p class="display-field" id="modalDescriptionDisplay"></p>
-                                <textarea class="form-control edit-field mb-2" id="modalEditDescription"
-                                    name="description" rows="5"></textarea>
                                 <hr>
-                                <p><strong>區域:</strong> <span class="display-field" id="modalAreaDisplay"></span></p>
-                                <input type="text" class="form-control edit-field mb-2" id="modalEditArea" name="area">
-                                <p><strong>日期(年):</strong> <span class="display-field" id="modalDateDisplay"></span></p>
-                                <input type="number" class="form-control edit-field mb-2" id="modalEditDate"
-                                    name="date">
+                                <p><strong>風格:</strong> <span class="display-field" id="modalStyleDisplay"></span></p>
+                                <input type="text" class="form-control edit-field mb-2" id="modalEditStyle" name="style">
+                                <p><strong>屋況:</strong> <span class="display-field" id="modalConditionDisplay"></span></p>
+                                <input type="text" class="form-control edit-field mb-2" id="modalEditCondition" name="condition">
+                                <p><strong>格局:</strong> <span class="display-field" id="modalLayoutDisplay"></span></p>
+                                <input type="text" class="form-control edit-field mb-2" id="modalEditLayout" name="layout">
                                 <p><strong>坪數:</strong> <span class="display-field" id="modalSizeDisplay"></span></p>
-                                <input type="number" class="form-control edit-field mb-2" id="modalEditSize"
-                                    name="size">
+                                <input type="text" class="form-control edit-field mb-2" id="modalEditSize" name="size">
+                                <p><strong>地點:</strong> <span class="display-field" id="modalLocationDisplay"></span></p>
+                                <input type="text" class="form-control edit-field mb-2" id="modalEditLocation" name="location">
                                 <p><strong>種類:</strong> <span class="display-field" id="modalTypeDisplay"></span></p>
                                 <select class="form-select edit-field mb-2" id="modalEditType" name="type" required>
                                     <option value="住宅空間">住宅空間</option>
@@ -453,15 +454,17 @@
                     col.className = 'col-md-4 col-sm-6 d-flex align-items-stretch';
                     const card = document.createElement('div');
                     card.className = 'card portfolio-card w-100';
-                    const descriptionSnippet = item.description ? item.description.replace(/<br\s*\/?>/gi, ' ').substring(0, 80) + '...' : '暫無描述';
+                    const descriptionSnippet = item.description ? item.description.replace(/<br\s*\/?>/gi, ' ').substring(0, 80) + '...' : '';
                     card.innerHTML = `
                          <img src="${item.images.length > 0 ? item.images[0].path : '/placeholder.jpg'}" class="card-img-top" alt="${item.name}">
                          <div class="card-body">
                              <h5 class="card-title portfolio-title">${item.name}</h5>
                              <div class="portfolio-details">
-                                 ${item.area ? `<span>${item.area}</span> | ` : ''}
-                                 ${item.date ? `<span>${item.date}</span> | ` : ''}
-                                 ${item.size ? `<span>${item.size}坪</span> | ` : ''}
+                                 ${item.style ? `<span>${item.style}</span> | ` : ''}
+                                 ${item.condition ? `<span>${item.condition}</span> | ` : ''}
+                                 ${item.layout ? `<span>${item.layout}</span> | ` : ''}
+                                 ${item.size ? `<span>${item.size}</span> | ` : ''}
+                                 ${item.location ? `<span>${item.location}</span> | ` : ''}
                                  ${item.type ? `<span>${item.type}</span>` : ''}
                              </div>
                              <p class="card-text">${descriptionSnippet}</p> 
@@ -499,17 +502,19 @@
                 clearModalAlert();
                 document.getElementById('modalTitle').textContent = item.name;
                 document.getElementById('modalProjectNameDisplay').textContent = item.name;
-                document.getElementById('modalDescriptionDisplay').innerHTML = item.description ? item.description.replace(/\n/g, '<br>') : '暫無描述';
-                document.getElementById('modalAreaDisplay').textContent = item.area || 'N/A';
-                document.getElementById('modalDateDisplay').textContent = item.date || 'N/A';
-                document.getElementById('modalSizeDisplay').textContent = item.size ? `${item.size}坪` : 'N/A';
+                document.getElementById('modalStyleDisplay').textContent = item.style || 'N/A';
+                document.getElementById('modalConditionDisplay').textContent = item.condition || 'N/A';
+                document.getElementById('modalLayoutDisplay').textContent = item.layout || 'N/A';
+                document.getElementById('modalSizeDisplay').textContent = item.size || 'N/A';
+                document.getElementById('modalLocationDisplay').textContent = item.location || 'N/A';
                 document.getElementById('modalTypeDisplay').textContent = item.type || 'N/A';
                 document.getElementById('modalEditFolder').value = item.folder;
                 document.getElementById('modalEditProjectName').value = item.name;
-                document.getElementById('modalEditDescription').value = item.description || '';
-                document.getElementById('modalEditArea').value = item.area || '';
-                document.getElementById('modalEditDate').value = item.date || '';
+                document.getElementById('modalEditStyle').value = item.style || '';
+                document.getElementById('modalEditCondition').value = item.condition || '';
+                document.getElementById('modalEditLayout').value = item.layout || '';
                 document.getElementById('modalEditSize').value = item.size || '';
+                document.getElementById('modalEditLocation').value = item.location || '';
                 document.getElementById('modalEditType').value = item.type || '';
                 modalEditImagesInput.value = '';
                 editFileListDiv.innerHTML = '';
@@ -567,10 +572,11 @@
                         loadPortfolioItems();
                         document.getElementById('modalTitle').textContent = formData.get('project_name');
                         document.getElementById('modalProjectNameDisplay').textContent = formData.get('project_name');
-                        document.getElementById('modalDescriptionDisplay').innerHTML = formData.get('description') ? formData.get('description').replace(/\n/g, '<br>') : '暫無描述';
-                        document.getElementById('modalAreaDisplay').textContent = formData.get('area') || 'N/A';
-                        document.getElementById('modalDateDisplay').textContent = formData.get('date') || 'N/A';
+                        document.getElementById('modalStyleDisplay').textContent = formData.get('style') || 'N/A';
+                        document.getElementById('modalConditionDisplay').textContent = formData.get('condition') || 'N/A';
+                        document.getElementById('modalLayoutDisplay').textContent = formData.get('layout') || 'N/A';
                         document.getElementById('modalSizeDisplay').textContent = formData.get('size') ? `${formData.get('size')}坪` : 'N/A';
+                        document.getElementById('modalLocationDisplay').textContent = formData.get('location') || 'N/A';
                         document.getElementById('modalTypeDisplay').textContent = formData.get('type') || 'N/A';
                     } else {
                         showModalAlert(`儲存失敗: ${result.message}`, 'danger');
