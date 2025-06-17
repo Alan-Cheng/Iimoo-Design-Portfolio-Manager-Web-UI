@@ -10,4 +10,4 @@ venv/
 .gitignore
 .DS_Store
 # Exclude local resources directory from build context
-resources/iimoo-design.github.io/
+resources/

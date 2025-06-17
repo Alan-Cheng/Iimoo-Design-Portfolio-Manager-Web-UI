@@ -68,7 +68,7 @@ def upload_portfolio():
         "style": request.form.get("style", ""),
         "condition": request.form.get("condition", ""),
         "layout": request.form.get("layout", ""),
-        "size": request.form.get("size", ""),
+        "size": request.form.get("size", "") + "坪",
         "location": request.form.get("location", ""),
         "type": request.form.get("type", "")
     }
@@ -127,6 +127,16 @@ def update_portfolio():
         # 檢查編號連續性
         if file_numbers:
             min_num = min(file_numbers)
+            if min_num != 1:
+                return jsonify({
+                    'success': False, 
+                    'message': '圖片編號必須從1開始 (1.jpg, 2.jpg...)'
+                })
+            if 0 in file_numbers:
+                return jsonify({
+                    'success': False, 
+                    'message': '不可上傳0號圖片（已移除平面圖功能)'
+                })
             max_num = max(file_numbers)
             missing_numbers = set(range(min_num, max_num + 1)) - file_numbers
             
@@ -158,7 +168,7 @@ def update_portfolio():
          commit_message = f"Update portfolio: {folder_name} ({update_data.get('project_name', '')})"
          thread = threading.Thread(target=run_git_push, args=(commit_message,))
          thread.start()
-         final_message += " (正在背景上傳到)"
+         final_message += " (正在背景上傳)"
 
     return jsonify({'success': final_success, 'message': final_message})
 

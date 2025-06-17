@@ -240,6 +240,7 @@ class PortfolioManager:
             
             # 2. 判斷是否全部為編號命名的圖片
             is_all_numbered = True
+            file_numbers = set()
             for file_storage in uploaded_files:
                 original_filename = file_storage.filename
                 if original_filename and original_filename.lower().endswith(('.jpg', '.png')):
@@ -247,6 +248,24 @@ class PortfolioManager:
                     if not name_part.isdigit():
                         is_all_numbered = False
                         break
+                    file_numbers.add(int(name_part))
+
+            if not is_all_numbered:
+                return False, "請將圖檔以數字編號。（1.jpg、2.jpg...）"
+
+            # 檢查編號連續性
+            if file_numbers:
+                min_num = min(file_numbers)
+                if min_num != 1:
+                    return False, "圖片編號必須從1開始 (1.jpg, 2.jpg...)"
+                if 0 in file_numbers:
+                    return False, "不可上傳0號圖片（已移除平面圖功能)"
+                max_num = max(file_numbers)
+                missing_numbers = set(range(min_num, max_num + 1)) - file_numbers
+                
+                if missing_numbers:
+                    missing_list = sorted(list(missing_numbers))
+                    return False, f"圖片編號不連續，缺少編號: {', '.join(map(str, missing_list))}"
 
             # 3. 儲存圖片
             saved_filenames = []
@@ -254,11 +273,7 @@ class PortfolioManager:
             for idx, file_storage in enumerate(uploaded_files):
                 original_filename = file_storage.filename
                 if original_filename and original_filename.lower().endswith(('.jpg', '.png')):
-                    if is_all_numbered:
-                        safe_filename = original_filename  # 保留原名
-                    else:
-                         return False, "請將圖檔以數字編號。（0.jpg、1.jpg...）"
-
+                    safe_filename = original_filename  # 保留原名
                     file_path = os.path.join(portfolio_path, safe_filename)
                     file_storage.save(file_path)
                     saved_filenames.append(safe_filename)
