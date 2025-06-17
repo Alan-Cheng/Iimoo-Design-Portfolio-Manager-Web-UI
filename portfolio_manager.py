@@ -257,7 +257,7 @@ class PortfolioManager:
                     if is_all_numbered:
                         safe_filename = original_filename  # 保留原名
                     else:
-                         return False, "請將圖檔以數字編號（0.jpg、1.jpg...）， 規則：0為平面圖，往後為實景圖。"
+                         return False, "請將圖檔以數字編號。（0.jpg、1.jpg...）"
 
                     file_path = os.path.join(portfolio_path, safe_filename)
                     file_storage.save(file_path)

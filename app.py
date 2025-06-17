@@ -79,7 +79,7 @@ def upload_portfolio():
         commit_message = f"Add portfolio: {description_data.get('project_name', 'New Portfolio')}"
         thread = threading.Thread(target=run_git_push, args=(commit_message,))
         thread.start()
-        message += " (正在背景上傳到 GitHub...)" 
+        message += " (正在背景上傳)" 
 
     return jsonify({'success': success, 'message': message})
 
@@ -119,7 +119,7 @@ def update_portfolio():
             # 檢查檔案命名 (必須是數字開頭)
             name_part = os.path.splitext(f.filename)[0]
             if not name_part.isdigit():
-                return jsonify({'success': False, 'message': f'檔案必須符合命名規則，0為平面圖，往後為實景圖 \n (例如: 0.jpg, 1.jpg, 2.jpg...)'})
+                return jsonify({'success': False, 'message': f'檔案必須符合命名規則。(例如: 0.jpg, 1.jpg, 2.jpg...)'})
             
             file_numbers.add(int(name_part))
             valid_files.append(f)
@@ -158,7 +158,7 @@ def update_portfolio():
          commit_message = f"Update portfolio: {folder_name} ({update_data.get('project_name', '')})"
          thread = threading.Thread(target=run_git_push, args=(commit_message,))
          thread.start()
-         final_message += " (正在背景上傳到 GitHub...)"
+         final_message += " (正在背景上傳到)"
 
     return jsonify({'success': final_success, 'message': final_message})
 
@@ -176,7 +176,7 @@ def delete_portfolio():
         commit_message = f"Delete portfolio: {folder_name}"
         thread = threading.Thread(target=run_git_push, args=(commit_message,))
         thread.start()
-        message += " (正在背景上傳到 GitHub...)" 
+        message += " (正在背景上傳)" 
 
     return jsonify({'success': success, 'message': message})
 
