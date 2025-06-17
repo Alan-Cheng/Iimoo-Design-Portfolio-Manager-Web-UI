@@ -68,7 +68,7 @@ def upload_portfolio():
         "style": request.form.get("style", ""),
         "condition": request.form.get("condition", ""),
         "layout": request.form.get("layout", ""),
-        "size": request.form.get("size", "") + "坪",
+        "size": request.form.get("size", ""),
         "location": request.form.get("location", ""),
         "type": request.form.get("type", "")
     }
