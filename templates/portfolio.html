@@ -224,8 +224,10 @@
                                     type="text" class="form-control" id="condition" name="condition"> </div>
                             <div class="col-md-3 mb-3"> <label for="layout" class="form-label">格局</label> <input
                                     type="text" class="form-control" id="layout" name="layout"> </div>
-                            <div class="col-md-3 mb-3"> <label for="size" class="form-label">坪數</label> <input
-                                    type="text" class="form-control" id="size" name="size"> </div>
+                            <div class="col-md-3 mb-3"> 
+                                <label for="size" class="form-label">坪數</label> 
+                                <input type="text" class="form-control" id="size" name="size" pattern="[0-9]*" inputmode="numeric" placeholder="請輸入數字" title="請輸入數字"> 
+                            </div>
                         </div>
                         <div class="row">
                             <div class="col-md-6 mb-3"> <label for="location" class="form-label">地點</label> <input
@@ -294,7 +296,7 @@
                                 <p><strong>格局:</strong> <span class="display-field" id="modalLayoutDisplay"></span></p>
                                 <input type="text" class="form-control edit-field mb-2" id="modalEditLayout" name="layout">
                                 <p><strong>坪數:</strong> <span class="display-field" id="modalSizeDisplay"></span></p>
-                                <input type="text" class="form-control edit-field mb-2" id="modalEditSize" name="size">
+                                <input type="text" class="form-control edit-field mb-2" id="modalEditSize" name="size" pattern="[0-9]*" inputmode="numeric" placeholder="請輸入數字" title="請輸入數字">
                                 <p><strong>地點:</strong> <span class="display-field" id="modalLocationDisplay"></span></p>
                                 <input type="text" class="form-control edit-field mb-2" id="modalEditLocation" name="location">
                                 <p><strong>種類:</strong> <span class="display-field" id="modalTypeDisplay"></span></p>
@@ -412,7 +414,20 @@
                 e.preventDefault();
                 const form = e.target;
                 if (form.type.value === "") { alert('請選擇作品種類'); form.type.focus(); return; }
+                
+                // 檢查坪數是否為數字
+                const size = form.size.value.trim();
+                if (size && !/^\d+$/.test(size)) {
+                    alert('坪數僅需輸入數字');
+                    form.size.focus();
+                    return;
+                }
+                
                 const formData = new FormData(form);
+                // 如果有輸入坪數，加上"坪"字
+                if (size) {
+                    formData.set('size', size + '坪');
+                }
                 const files = imageUploadInput.files;
                 if (files.length === 0) { alert('請至少選擇一張圖片'); return; }
                 const btn = form.querySelector('button[type="submit"]');
@@ -546,6 +561,20 @@
                 const btn = portfolioModalElement.querySelector('.save-edit-btn');
                 const formElement = document.getElementById('edit-portfolio-form');
                 const formData = new FormData(formElement);
+                
+                // 檢查坪數是否為數字
+                const size = formData.get('size').trim();
+                if (size && !/^\d+$/.test(size)) {
+                    showModalAlert('錯誤：坪數必須為數字', 'danger');
+                    document.getElementById('modalEditSize').focus();
+                    return;
+                }
+                
+                // 如果有輸入坪數，加上"坪"字
+                if (size) {
+                    formData.set('size', size + '坪');
+                }
+                
                 const folderName = document.getElementById('modalEditFolder').value;
                 formData.append('folder_name', folderName);
 
