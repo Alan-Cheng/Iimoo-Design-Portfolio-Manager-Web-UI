@@ -344,6 +344,22 @@
             const editFileListDiv = document.getElementById('edit-file-list');
             const editPortfolioForm = document.getElementById('edit-portfolio-form');
 
+            // 頁面載入時先 pull 最新代碼
+            async function pullLatestChanges() {
+                try {
+                    const response = await fetch('/api/git/pull', { method: 'POST' });
+                    const result = await response.json();
+                    if (!result.success) {
+                        console.error("Git pull failed:", result.message);
+                    }
+                } catch (error) {
+                    console.error("Error during git pull:", error);
+                }
+            }
+            
+            // 執行 pull
+            pullLatestChanges();
+
             // 設定活動分頁樣式
             const currentPath = window.location.pathname;
             document.querySelectorAll('.nav-link').forEach(link => {
@@ -565,7 +581,7 @@
                 // 檢查坪數是否為數字
                 const size = formData.get('size').trim();
                 if (size && !/^\d+$/.test(size)) {
-                    showModalAlert('錯誤：坪數必須為數字', 'danger');
+                    showModalAlert('錯誤：坪數僅需輸入數字', 'danger');
                     document.getElementById('modalEditSize').focus();
                     return;
                 }

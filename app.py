@@ -190,6 +190,11 @@ def delete_portfolio():
 
     return jsonify({'success': success, 'message': message})
 
+@app.route('/api/git/pull', methods=['POST'])
+def git_pull():
+    success, message = GitOperations.pull()
+    return jsonify({'success': success, 'message': message})
+
 # --- Main Execution ---
 if __name__ == '__main__':
     if not os.path.exists(GitOperations.REPO_PATH):
