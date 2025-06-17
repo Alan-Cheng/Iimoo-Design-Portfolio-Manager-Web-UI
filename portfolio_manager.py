@@ -267,34 +267,15 @@ class PortfolioManager:
             if not saved_filenames:
                 return False, "無有效圖片檔案上傳，無法替換圖片"
 
-            # 4. Process 0.jpg if 0.jpg and 1.jpg exist
-            path_0 = file_map.get("0.jpg") or file_map.get("0.png")
-            path_1 = file_map.get("1.jpg") or file_map.get("1.png")
-            processing_done = False
-            if path_0 and path_1:
-                try:
-                    with Image.open(path_0) as img_0, Image.open(path_1) as img_1:
-                        canvas_size = img_1.size
-                        processed_img_0 = PortfolioManager._resize_and_center_image(img_0, canvas_size)
-                        if processed_img_0: 
-                            # 轉換為 webp
-                            webp_path = os.path.splitext(path_0)[0] + '.webp'
-                            processed_img_0.save(webp_path, format='WEBP', quality=75)
-                            os.remove(path_0)  # 刪除原始檔案
-                            processing_done = True
-                except Exception as img_proc_e:
-                    print(f"Error processing replaced image {path_0}: {img_proc_e}. Keeping original.")
-            
-            # 5. 將其他圖片轉換為 webp
+            # 4. 將所有圖片轉換為 webp
             for filename, filepath in file_map.items():
-                if filename != "0.jpg" and filename != "0.png":  # 跳過已經處理過的 0.jpg/0.png
-                    try:
-                        with Image.open(filepath) as img:
-                            webp_path = os.path.splitext(filepath)[0] + '.webp'
-                            img.save(webp_path, format='WEBP', quality=75)
-                            os.remove(filepath)  # 刪除原始檔案
-                    except Exception as e:
-                        print(f"Error converting {filename} to webp: {e}")
+                try:
+                    with Image.open(filepath) as img:
+                        webp_path = os.path.splitext(filepath)[0] + '.webp'
+                        img.save(webp_path, format='WEBP', quality=75)
+                        os.remove(filepath)  # 刪除原始檔案
+                except Exception as e:
+                    print(f"Error converting {filename} to webp: {e}")
             
             return True, f"圖片上傳成功"
 
