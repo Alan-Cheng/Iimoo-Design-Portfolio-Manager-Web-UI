@@ -45,6 +45,14 @@ def serve_static(filename):
 # --- Page Routes ---
 @app.route('/')
 def index():
+    # Pull latest changes before loading the page
+    print("Pulling latest changes from GitHub...")
+    pull_success, pull_msg = GitOperations.pull()
+    if pull_success:
+        print(f"Successfully pulled latest changes: {pull_msg}")
+    else:
+        print(f"Pull failed: {pull_msg}")
+    
     if not os.path.exists(GitOperations.REPO_PATH):
         print("Repository not found locally, attempting to clone...")
         clone_success, clone_msg = GitOperations.clone()
