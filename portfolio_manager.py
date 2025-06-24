@@ -169,7 +169,7 @@ class PortfolioManager:
             filenames_sorted = sorted(os.listdir(dir_path), key=lambda name: int(name.split('.')[0]) if name.split('.')[0].isdigit() else float('inf'))
             for filename in filenames_sorted: 
                 filepath = os.path.join(dir_path, filename)
-                if os.path.isfile(filepath) and filename.lower().endswith('.jpg'):
+                if os.path.isfile(filepath) and filename.lower().endswith('.webp'):
                     images.append({ 'name': filename, 'path': f"/assets/img/portfolio/{item_dir}/{filename}" })
             if images:
                 desc_data = descriptions.get(item_dir, {}) 
@@ -206,19 +206,19 @@ class PortfolioManager:
             return False, f"目標路徑並非資料夾: {portfolio_path}"
 
         try:
-            # 1. Delete existing JPG files
+            # 1. Delete existing WebP files
             for filename in os.listdir(portfolio_path):
-                if filename.lower().endswith('.jpg'):
+                if filename.lower().endswith('.webp'):
                     try:
                         os.remove(os.path.join(portfolio_path, filename))
                     except OSError as e:
                         print(f"無法刪除檔案 {filename}: {e}")
             
-            # 2. 判斷是否全部為編號命名的圖片（例如 0.jpg、1.jpg）
+            # 2. 判斷是否全部為編號命名的圖片（例如 0.webp、1.webp）
             is_all_numbered = True
             for file_storage in uploaded_files:
                 original_filename = file_storage.filename
-                if original_filename and original_filename.lower().endswith('.jpg'):
+                if original_filename and (original_filename.lower().endswith('.jpg') or original_filename.lower().endswith('.webp')):
                     name_part = os.path.splitext(original_filename)[0]
                     if not name_part.isdigit():
                         is_all_numbered = False
@@ -229,23 +229,34 @@ class PortfolioManager:
             file_map = {}
             for idx, file_storage in enumerate(uploaded_files):
                 original_filename = file_storage.filename
-                if original_filename and original_filename.lower().endswith('.jpg'):
+                if original_filename and (original_filename.lower().endswith('.jpg') or original_filename.lower().endswith('.webp')):
                     if is_all_numbered:
-                        safe_filename = original_filename  # 保留原名
+                        # Convert to WebP format with number
+                        name_part = os.path.splitext(original_filename)[0]
+                        safe_filename = f"{name_part}.webp"
                     else:
-                         return False, "請將jpg圖檔以數字編號（0.jpg、1.jpg...）， 規則：0為平面圖，往後為實景圖。"
+                         return False, "請將圖檔以數字編號（0.webp、1.webp...）， 規則：0為平面圖，往後為實景圖。"
 
                     file_path = os.path.join(portfolio_path, safe_filename)
-                    file_storage.save(file_path)
+                    
+                    # Convert and save as WebP
+                    try:
+                        with Image.open(file_storage) as img:
+                            img_rgb = img.convert("RGB")
+                            img_rgb.save(file_path, format='WEBP', quality=75)
+                    except Exception as img_e:
+                        print(f"Error converting image {original_filename} to WebP: {img_e}")
+                        return False, f"轉換圖片 {original_filename} 為 WebP 格式時出錯"
+                    
                     saved_filenames.append(safe_filename)
                     file_map[safe_filename] = file_path
 
             if not saved_filenames:
                 return False, "無有效圖片檔案上傳，無法替換圖片"
 
-            # 4. Process 0.jpg if 0.jpg and 1.jpg exist
-            path_0 = file_map.get("0.jpg")
-            path_1 = file_map.get("1.jpg")
+            # 4. Process 0.webp if 0.webp and 1.webp exist
+            path_0 = file_map.get("0.webp")
+            path_1 = file_map.get("1.webp")
             processing_done = False
             if path_0 and path_1:
                 try:
@@ -253,7 +264,7 @@ class PortfolioManager:
                         canvas_size = img_1.size
                         processed_img_0 = PortfolioManager._resize_and_center_image(img_0, canvas_size)
                         if processed_img_0: 
-                            processed_img_0.save(path_0, format='JPEG', quality=95)
+                            processed_img_0.save(path_0, format='WEBP', quality=75)
                             processing_done = True
                 except Exception as img_proc_e:
                     print(f"Error processing replaced image {path_0}: {img_proc_e}. Keeping original.")

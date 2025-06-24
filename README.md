@@ -4,11 +4,11 @@
 
 ## 功能
 
-*   上傳作品集圖片 (JPG 格式)。
+*   上傳作品集圖片 (JPG/WebP 格式，自動轉換為 WebP)。
 ![iimoo-後台](https://github.com/Alan-Cheng/Iimoo-Design-Portfolio-Manager-Web-UI/blob/master/demo/upload.png?raw=true "上傳頁面")
 >
 *   透過 Web UI 新增、編輯、刪除作品集。
-*   自動處理第一張上傳圖片 (`0.jpg`)，根據第二張圖片 (`1.jpg`) 的尺寸進行裁剪、縮放和置中。
+*   自動處理第一張上傳圖片 (`0.webp`)，根據第二張圖片 (`1.webp`) 的尺寸進行裁剪、縮放和置中。
 在對作品集進行增刪改操作後，自動將變更 (圖片和描述檔 `portfolio_description.json`) add、commit 並 push 到指定的 GitHub Repo。
 ![iimoo-後台](https://github.com/Alan-Cheng/Iimoo-Design-Portfolio-Manager-Web-UI/blob/master/demo/portfolio.png?raw=true "作品頁面")
 >
@@ -57,7 +57,7 @@
     應用程式啟動時會檢查 `resources/《YourGitHubRepoName》` 是否存在，若不存在會嘗試自動 clone。
 
 5.  **應用程式:**
-    打開瀏覽器，輸入 `http://localhost:5000`。
+    打開瀏覽器，輸入 `http://localhost:30678`。
 
 ## Docker 設定與執行
 
@@ -72,19 +72,19 @@
     *   執行以下指令：
     ```bash
     # 將 your_actual_github_token 替換成你的 GitHub PAT
-    docker run -p 5000:5000 -e GITHUB_TOKEN=《YourGitHubPersonalAccessTokenHere》 -e GITHUB_REPO_URL=《YourGitHubRepoURL》 -e GITHUB_REPO_NAME=《YourGitHubRepoName》 --name portfolio-app portfolio-manager-app
+    docker run -p 30678:30678 -e GITHUB_TOKEN=《YourGitHubPersonalAccessTokenHere》 -e GITHUB_REPO_URL=《YourGitHubRepoURL》 -e GITHUB_REPO_NAME=《YourGitHubRepoName》 --name portfolio-app portfolio-manager-app
 
     ```
-    *   `-p 5000:5000`: 將主機的 Port 5000 映射到容器的 Port 5000。
+    *   `-p 30678:30678`: 將主機的 Port 30678 映射到容器的 Port 30678。
     *   `-e GITHUB_TOKEN="..."`: **必須**透過環境變數將您的 GitHub Token 傳遞給容器。
     *   `-e GITHUB_REPO_URL="..."`: **必須**透過環境變數將您的 GitHub Repo URL 傳遞給容器。
     *   `-e GITHUB_REPO_NAME="..."`: **必須**透過環境變數將您的 GitHub Repo Name 傳遞給容器。
     *   `--name portfolio-app`: 為容器命名，方便管理 (例如停止 `docker stop portfolio-app`, 移除 `docker rm portfolio-app`)。
 
 3.  **使用方式:**
-    啟動容器並稍等片刻，容器啟動時會自動 clone 需要一點時間。打開瀏覽器，輸入 `http://localhost:5000`。
+    啟動容器並稍等片刻，容器啟動時會自動 clone 需要一點時間。打開瀏覽器，輸入 `http://localhost:30678`。
 
 ## 注意事項
 
-*   **圖片處理:** 上傳新作品集或替換圖片時，若同時存在 `0.jpg` 和 `1.jpg`，程式會嘗試處理 `0.jpg` 使其符合 `1.jpg` 的畫布大小。此功能依賴 Pillow 套件。
+*   **圖片處理:** 上傳新作品集或替換圖片時，若同時存在 `0.webp` 和 `1.webp`，程式會嘗試處理 `0.webp` 使其符合 `1.webp` 的畫布大小。此功能依賴 Pillow 套件。所有上傳的圖片都會自動轉換為 WebP 格式以優化檔案大小。
 *   **自動同步:** 對作品集的增刪改操作會觸發背景程序，自動執行 `git pull`, `git add .`, `git commit`, `git push`。您可以在執行 Flask 應用程式的終端機中看到相關的 Git 操作訊息。

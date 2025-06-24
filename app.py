@@ -8,6 +8,14 @@ import threading
 load_dotenv()
 app = Flask(__name__)
 
+# Debug: Print loaded environment variables
+print("=== Environment Variables ===")
+print(f"PORT: {os.environ.get('PORT', 'Not set')}")
+print(f"GITHUB_TOKEN: {'Set' if os.environ.get('GITHUB_TOKEN') else 'Not set'}")
+print(f"GITHUB_REPO_URL: {os.environ.get('GITHUB_REPO_URL', 'Not set')}")
+print(f"GITHUB_REPO_NAME: {os.environ.get('GITHUB_REPO_NAME', 'Not set')}")
+print("============================")
+
 # --- Helper for Background Git Push ---
 def run_git_push(commit_message):
     """Runs add, commit, push in a background thread."""
@@ -60,9 +68,9 @@ def upload_portfolio():
     uploaded_files = request.files.getlist('images') 
     if not uploaded_files or all(f.filename == '' for f in uploaded_files):
          return jsonify({'success': False, 'message': '沒有選擇任何檔案'})
-    valid_files = [f for f in uploaded_files if f and f.filename.lower().endswith('.jpg')]
+    valid_files = [f for f in uploaded_files if f and (f.filename.lower().endswith('.jpg') or f.filename.lower().endswith('.webp'))]
     if not valid_files:
-         return jsonify({'success': False, 'message': '上傳的檔案中沒有有效的JPG圖片'})
+         return jsonify({'success': False, 'message': '上傳的檔案中沒有有效的JPG或WebP圖片'})
     description_data = {
         "project_name": request.form.get("project_name", ""),
         "description": request.form.get("description", ""),
@@ -102,7 +110,7 @@ def update_portfolio():
     
     if 'images' in request.files:
         uploaded_files = request.files.getlist('images')
-        valid_files = [f for f in uploaded_files if f and f.filename != '' and f.filename.lower().endswith('.jpg')]
+        valid_files = [f for f in uploaded_files if f and f.filename != '' and (f.filename.lower().endswith('.jpg') or f.filename.lower().endswith('.webp'))]
         if valid_files: 
             images_replaced = True
             print(f"Replacing images for {folder_name}...")
@@ -157,5 +165,5 @@ if __name__ == '__main__':
              
     # Bind to 0.0.0.0 to be accessible from outside the container
     # Use os.environ.get('PORT', 5000) for flexibility if needed later
-    port = int(os.environ.get("PORT", 5000))
+    port = int(os.environ.get("PORT", 30678))
     app.run(host='0.0.0.0', port=port, debug=False) # Disable debug mode in Docker

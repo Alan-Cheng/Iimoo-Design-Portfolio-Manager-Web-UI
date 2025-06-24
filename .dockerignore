@@ -11,3 +11,4 @@ venv/
 .DS_Store
 # Exclude local resources directory from build context
 resources/iimoo-design.github.io/
+resources/one-shape-website/
