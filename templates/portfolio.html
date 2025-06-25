@@ -187,12 +187,21 @@
 
 <body>
     <div class="container py-4">
-        <h1 class="text-center mb-4">
-            一形設計
-            <!-- <img src="{{ url_for('static', filename='logo/logo.avif') }}"
-                style="height: 40px; width: auto; object-fit: cover;" alt="一形設計 one-shape Design"> -->
-        </h1>
-        <h2 class="text-center mb-4">作品後台管理系統</h2>
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <div class="text-center flex-grow-1">
+                <h1 class="mb-2">
+                    Oneshape
+                    <!-- <img src="{{ url_for('static', filename='logo/logo.avif') }}"
+                        style="height: 40px; width: auto; object-fit: cover;" alt="Oneshape Design"> -->
+                </h1>
+                <h2 class="mb-0">作品後台管理系統</h2>
+            </div>
+            <div class="ms-3">
+                <a href="/logout" class="btn btn-outline-danger btn-sm">
+                    <i class="fas fa-sign-out-alt"></i> 登出
+                </a>
+            </div>
+        </div>
 
         <!-- <ul class="nav nav-tabs mb-4">
             <li class="nav-item"> <a class="nav-link active" href="/">作品集</a> </li>

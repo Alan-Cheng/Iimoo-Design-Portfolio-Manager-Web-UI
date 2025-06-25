@@ -1,12 +1,32 @@
-from flask import Flask, render_template, request, jsonify, send_from_directory
+from flask import Flask, render_template, request, jsonify, send_from_directory, session, redirect, url_for
 from git_operations import GitOperations 
 from portfolio_manager import PortfolioManager
 from dotenv import load_dotenv
 import os
 import threading 
+from functools import wraps
 
 load_dotenv()
 app = Flask(__name__)
+app.secret_key = os.getenv('SECRET_KEY', 'your-secret-key-change-this')
+
+# Debug: Print loaded environment variables
+print("=== Environment Variables ===")
+print(f"PORT: {os.environ.get('PORT', 'Not set')}")
+print(f"GITHUB_TOKEN: {'Set' if os.environ.get('GITHUB_TOKEN') else 'Not set'}")
+print(f"GITHUB_REPO_URL: {os.environ.get('GITHUB_REPO_URL', 'Not set')}")
+print(f"GITHUB_REPO_NAME: {os.environ.get('GITHUB_REPO_NAME', 'Not set')}")
+print(f"ADMIN_PASSWORD: {'Set' if os.environ.get('ADMIN_PASSWORD') else 'Not set'}")
+print("============================")
+
+# Login required decorator
+def login_required(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if 'logged_in' not in session:
+            return redirect(url_for('login'))
+        return f(*args, **kwargs)
+    return decorated_function
 
 # --- Helper for Background Git Push ---
 def run_git_push(commit_message):
@@ -28,6 +48,7 @@ def run_git_push(commit_message):
 
 # --- Static File Route ---
 @app.route('/assets/<path:filename>')
+@login_required
 def serve_static(filename):
     return send_from_directory(
         os.path.join(PortfolioManager.BASE_DIR, 'assets'), 
@@ -36,6 +57,7 @@ def serve_static(filename):
 
 # --- Page Routes ---
 @app.route('/')
+@login_required
 def index():
     if not os.path.exists(GitOperations.REPO_PATH):
         print("Repository not found locally, attempting to clone...")
@@ -44,8 +66,14 @@ def index():
             print(f"Initial clone failed: {clone_msg}")
     return render_template('portfolio.html')
 
+@app.route('/git')
+@login_required
+def git_operations():
+    return render_template('index.html')
+
 # --- Portfolio API Routes ---
 @app.route('/api/portfolio', methods=['GET'])
+@login_required
 def get_portfolio():
     try:
         items = PortfolioManager.get_portfolio_items()
@@ -54,6 +82,7 @@ def get_portfolio():
         return jsonify({'success': False, 'message': str(e)})
 
 @app.route('/api/portfolio/upload', methods=['POST'])
+@login_required
 def upload_portfolio():
     if 'images' not in request.files:
         return jsonify({'success': False, 'message': '缺少圖片檔案'})
@@ -84,6 +113,7 @@ def upload_portfolio():
     return jsonify({'success': success, 'message': message})
 
 @app.route('/api/portfolio/update', methods=['POST']) 
+@login_required
 def update_portfolio():
     folder_name = request.form.get('folder_name')
     if not folder_name:
@@ -174,6 +204,7 @@ def update_portfolio():
 
 
 @app.route('/api/portfolio/delete', methods=['POST'])
+@login_required
 def delete_portfolio():
     data = request.json
     folder_name = data.get('folder_name')
@@ -190,10 +221,77 @@ def delete_portfolio():
 
     return jsonify({'success': success, 'message': message})
 
+# --- Git API Routes ---
+@app.route('/api/git/clone', methods=['POST'])
+@login_required
+def git_clone():
+    try:
+        success, message = GitOperations.clone()
+        return jsonify({'success': success, 'message': message})
+    except Exception as e:
+        return jsonify({'success': False, 'message': str(e)})
+
 @app.route('/api/git/pull', methods=['POST'])
+@login_required
 def git_pull():
     success, message = GitOperations.pull()
     return jsonify({'success': success, 'message': message})
+
+@app.route('/api/git/add', methods=['POST'])
+@login_required
+def git_add():
+    try:
+        data = request.json
+        files = data.get('files', '.')
+        success, message = GitOperations.add(files)
+        return jsonify({'success': success, 'message': message})
+    except Exception as e:
+        return jsonify({'success': False, 'message': str(e)})
+
+@app.route('/api/git/commit', methods=['POST'])
+@login_required
+def git_commit():
+    try:
+        data = request.json
+        message = data.get('message', '')
+        if not message:
+            return jsonify({'success': False, 'message': '請輸入 commit 訊息'})
+        success, message = GitOperations.commit(message)
+        return jsonify({'success': success, 'message': message})
+    except Exception as e:
+        return jsonify({'success': False, 'message': str(e)})
+
+@app.route('/api/git/push', methods=['POST'])
+@login_required
+def git_push():
+    try:
+        success, message = GitOperations.push()
+        return jsonify({'success': success, 'message': message})
+    except Exception as e:
+        return jsonify({'success': False, 'message': str(e)})
+
+# --- Login Routes ---
+@app.route('/login', methods=['GET', 'POST'])
+def login():
+    if request.method == 'POST':
+        password = request.form.get('password')
+        admin_password = os.getenv('ADMIN_PASSWORD')
+        
+        if not admin_password:
+            return render_template('login.html', error='管理員密碼未設定')
+        
+        if password == admin_password:
+            session['logged_in'] = True
+            return redirect(url_for('index'))
+        else:
+            return render_template('login.html', error='密碼錯誤')
+    
+    return render_template('login.html')
+
+@app.route('/logout')
+def logout():
+    session.pop('logged_in', None)
+    return redirect(url_for('login'))
 
 # --- Main Execution ---
 if __name__ == '__main__':
