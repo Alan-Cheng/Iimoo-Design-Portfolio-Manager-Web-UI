@@ -4,7 +4,9 @@
 
 ## 功能
 
-*   **登入系統**: 需要管理員密碼才能存取後台管理系統
+*   **2025/06/25 配合雲端部署，新增登入驗證**: 需要管理員密碼才能存取後台管理系統
+![iimoo-後台登入](https://github.com/Alan-Cheng/Iimoo-Design-Portfolio-Manager-Web-UI/blob/master/demo/login.png?raw=true "登入頁面")
+>
 *   上傳作品集圖片 (JPG/WebP 格式，自動轉換為 WebP)。
 ![iimoo-後台](https://github.com/Alan-Cheng/Iimoo-Design-Portfolio-Manager-Web-UI/blob/master/demo/upload.png?raw=true "上傳頁面")
 >
