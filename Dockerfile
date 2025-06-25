@@ -25,7 +25,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY . .
 
 # Make port 30678 available to the world outside this container
-EXPOSE 30678
+EXPOSE 8080
 
 # Define environment variable for the GitHub token (must be provided at runtime)
 # We don't set a default value here to avoid leaking it if not provided.
