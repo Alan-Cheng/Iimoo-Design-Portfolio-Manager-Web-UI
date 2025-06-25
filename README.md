@@ -4,6 +4,7 @@
 
 ## 功能
 
+*   **登入系統**: 需要管理員密碼才能存取後台管理系統
 *   上傳作品集圖片 (JPG/WebP 格式，自動轉換為 WebP)。
 ![iimoo-後台](https://github.com/Alan-Cheng/Iimoo-Design-Portfolio-Manager-Web-UI/blob/master/demo/upload.png?raw=true "上傳頁面")
 >
@@ -41,8 +42,13 @@
     GITHUB_TOKEN=《YourGitHubPersonalAccessTokenHere》
     GITHUB_REPO_URL=《YourGitHubRepoURL》
     GITHUB_REPO_NAME=《YourGitHubRepoName》
+    SECRET_KEY=your-secret-key-change-this-to-something-secure
+    ADMIN_PASSWORD=your-admin-password-here
     ```
-    **重要:**  `ghp_YourGitHubPersonalAccessTokenHere` 替換為有存取權限的 Token。
+    **重要:**  
+    * `ghp_YourGitHubPersonalAccessTokenHere` 替換為有存取權限的 Token。
+    * `SECRET_KEY` 用於 Flask session 加密，請設定為安全的隨機字串。
+    * `ADMIN_PASSWORD` 設定管理員登入密碼。
 
 3.  **測試環境安裝依賴套件:**
     打開終端機，進入專案根目錄，執行：
@@ -57,7 +63,7 @@
     應用程式啟動時會檢查 `resources/《YourGitHubRepoName》` 是否存在，若不存在會嘗試自動 clone。
 
 5.  **應用程式:**
-    打開瀏覽器，輸入 `http://localhost:30678`。
+    打開瀏覽器，輸入 `http://localhost:8080`，會先導向登入頁面。
 
 ## Docker 設定與執行
 
@@ -72,19 +78,35 @@
     *   執行以下指令：
     ```bash
     # 將 your_actual_github_token 替換成你的 GitHub PAT
-    docker run -p 30678:30678 -e GITHUB_TOKEN=《YourGitHubPersonalAccessTokenHere》 -e GITHUB_REPO_URL=《YourGitHubRepoURL》 -e GITHUB_REPO_NAME=《YourGitHubRepoName》 --name portfolio-app portfolio-manager-app
-
+    docker run -p 8080:8080 \
+      -e GITHUB_TOKEN=《YourGitHubPersonalAccessTokenHere》 \
+      -e GITHUB_REPO_URL=《YourGitHubRepoURL》 \
+      -e GITHUB_REPO_NAME=《YourGitHubRepoName》 \
+      -e SECRET_KEY=your-secret-key-change-this-to-something-secure \
+      -e ADMIN_PASSWORD=your-admin-password-here \
+      --name portfolio-app portfolio-manager-app
     ```
-    *   `-p 30678:30678`: 將主機的 Port 30678 映射到容器的 Port 30678。
+    *   `-p 8080:8080`: 將主機的 Port 8080 映射到容器的 Port 8080。
     *   `-e GITHUB_TOKEN="..."`: **必須**透過環境變數將您的 GitHub Token 傳遞給容器。
     *   `-e GITHUB_REPO_URL="..."`: **必須**透過環境變數將您的 GitHub Repo URL 傳遞給容器。
     *   `-e GITHUB_REPO_NAME="..."`: **必須**透過環境變數將您的 GitHub Repo Name 傳遞給容器。
+    *   `-e SECRET_KEY="..."`: **必須**設定 Flask session 加密金鑰。
+    *   `-e ADMIN_PASSWORD="..."`: **必須**設定管理員登入密碼。
     *   `--name portfolio-app`: 為容器命名，方便管理 (例如停止 `docker stop portfolio-app`, 移除 `docker rm portfolio-app`)。
 
 3.  **使用方式:**
-    啟動容器並稍等片刻，容器啟動時會自動 clone 需要一點時間。打開瀏覽器，輸入 `http://localhost:30678`。
+    啟動容器並稍等片刻，容器啟動時會自動 clone 需要一點時間。打開瀏覽器，輸入 `http://localhost:8080`，會先導向登入頁面。
+
+## 登入系統
+
+*   **登入頁面**: 訪問應用程式時會自動導向 `/login` 頁面
+*   **密碼驗證**: 使用環境變數 `ADMIN_PASSWORD` 中設定的密碼進行驗證
+*   **Session 管理**: 登入成功後會建立 session，無需重複登入
+*   **登出功能**: 每個頁面都有登出按鈕，點擊後會清除 session 並導向登入頁面
+*   **安全保護**: 所有 API 端點和頁面都需要登入才能存取
 
 ## 注意事項
 
 *   **圖片處理:** 上傳新作品集或替換圖片時，若同時存在 `0.webp` 和 `1.webp`，程式會嘗試處理 `0.webp` 使其符合 `1.webp` 的畫布大小。此功能依賴 Pillow 套件。所有上傳的圖片都會自動轉換為 WebP 格式以優化檔案大小。
 *   **自動同步:** 對作品集的增刪改操作會觸發背景程序，自動執行 `git pull`, `git add .`, `git commit`, `git push`。您可以在執行 Flask 應用程式的終端機中看到相關的 Git 操作訊息。
+*   **安全性:** 請確保 `SECRET_KEY` 和 `ADMIN_PASSWORD` 設定為安全的隨機字串，並妥善保管環境變數檔案。
