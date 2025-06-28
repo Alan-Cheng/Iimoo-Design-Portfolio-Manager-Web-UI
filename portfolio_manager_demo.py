@@ -17,21 +17,21 @@ class PortfolioManagerDemo:
             "folder_name": "demo-project-1",
             "project_name": "現代住宅設計",
             "description": "這是一個現代風格的住宅設計項目，注重空間利用和自然採光。",
-            "area": "120平方米",
+            "area": "台北市南港區",
             "date": "2024-01-15",
             "size": "3房2廳",
             "type": "住宅設計",
-            "images": ["demo1_1.jpg", "demo1_2.jpg"]
+            "images": ["demo1_1.jpeg", "demo1_2.jpeg"]
         },
         {
             "folder_name": "demo-project-2", 
             "project_name": "商業空間規劃",
             "description": "為企業打造的現代化辦公空間，強調協作和創意氛圍。",
-            "area": "500平方米",
+            "area": "新北市汐止區",
             "date": "2024-02-20",
             "size": "開放式辦公",
             "type": "商業設計",
-            "images": ["demo2_1.jpg", "demo2_2.jpg", "demo2_3.jpg"]
+            "images": ["demo2_1.jpeg", "demo2_2.jpeg", "demo2_3.jpeg"]
         }
     ]
 
@@ -75,14 +75,31 @@ class PortfolioManagerDemo:
                             with open(desc_file, 'r', encoding='utf-8') as f:
                                 portfolio_data = json.load(f)
                                 
-                            # Get image files
+                            # Get image files with proper path format
                             images = []
                             for file in os.listdir(folder_path):
                                 if file.lower().endswith(('.jpg', '.jpeg', '.png', '.webp')):
-                                    images.append(file)
+                                    # Create path format that matches frontend expectations
+                                    image_path = f"/assets/img/portfolio/{folder_name}/{file}"
+                                    images.append({
+                                        'name': file,
+                                        'path': image_path
+                                    })
                             
-                            portfolio_data['images'] = images
-                            portfolios.append(portfolio_data)
+                            # Create portfolio item with correct field names for frontend
+                            portfolio_item = {
+                                'name': portfolio_data.get('project_name', 'Demo Project'),
+                                'folder': portfolio_data.get('folder_name', folder_name),
+                                'folder_num': 1,  # Demo doesn't use numbered folders
+                                'images': images,
+                                'description': portfolio_data.get('description', ''),
+                                'area': portfolio_data.get('area', ''),
+                                'date': portfolio_data.get('date', ''),
+                                'size': portfolio_data.get('size', ''),
+                                'type': portfolio_data.get('type', '')
+                            }
+                            
+                            portfolios.append(portfolio_item)
                             
                         except Exception as e:
                             print(f"Error reading portfolio {folder_name}: {e}")

@@ -33,15 +33,21 @@ def login_required(f):
 def login():
     if request.method == 'POST':
         password = request.form.get('password')
-        admin_password = os.getenv('ADMIN_PASSWORD', 'demo123')
+        admin_password = 'demo123'  # 直接寫死密碼
+        
+        # Debug: Print password comparison
+        print(f"Demo: Login attempt - Input: '{password}', Expected: '{admin_password}'")
+        print(f"Demo: Password match: {password == admin_password}")
         
         if password == admin_password:
             session['logged_in'] = True
+            print("Demo: Login successful")
             return redirect(url_for('index'))
         else:
-            return render_template('login.html', error='密碼錯誤 (Demo: 使用 demo123)')
+            print("Demo: Login failed")
+            return render_template('login_demo.html', error='密碼錯誤 (Demo: 使用 demo123)')
     
-    return render_template('login.html')
+    return render_template('login_demo.html')
 
 @app.route('/logout')
 def logout():
@@ -81,6 +87,24 @@ def serve_static(filename):
         filename
     )
 
+# --- Demo Image Route ---
+@app.route('/assets/img/portfolio/<folder_name>/<filename>')
+def serve_portfolio_image(folder_name, filename):
+    """Serve portfolio images for demo mode"""
+    try:
+        image_path = os.path.join(PortfolioManagerDemo.PORTFOLIO_DIR, folder_name, filename)
+        if os.path.exists(image_path):
+            return send_from_directory(
+                os.path.join(PortfolioManagerDemo.PORTFOLIO_DIR, folder_name),
+                filename
+            )
+        else:
+            # Return a placeholder image or 404
+            return "Demo image not found", 404
+    except Exception as e:
+        print(f"Demo: Error serving image {filename} from {folder_name}: {e}")
+        return "Demo image error", 500
+
 # --- Page Routes ---
 @app.route('/')
 @login_required
@@ -113,151 +137,46 @@ def get_portfolio():
 @app.route('/api/portfolio/upload', methods=['POST'])
 @login_required
 def upload_portfolio():
-    if 'images' not in request.files:
-        return jsonify({'success': False, 'message': '缺少圖片檔案'})
-    uploaded_files = request.files.getlist('images') 
-    if not uploaded_files or all(f.filename == '' for f in uploaded_files):
-         return jsonify({'success': False, 'message': '沒有選擇任何檔案'})
-    valid_files = [f for f in uploaded_files if f and (f.filename.lower().endswith('.jpg') or f.filename.lower().endswith('.webp'))]
-    if not valid_files:
-         return jsonify({'success': False, 'message': '上傳的檔案中沒有有效的JPG或WebP圖片'})
-    description_data = {
-        "project_name": request.form.get("project_name", ""),
-        "description": request.form.get("description", ""),
-        "area": request.form.get("area", ""),
-        "date": request.form.get("date", ""),
-        "size": request.form.get("size", ""),
-        "type": request.form.get("type", "")
-    }
-    
-    success, message = PortfolioManagerDemo.create_new_portfolio(valid_files, description_data)
-    
-    if success:
-        commit_message = f"Demo: Add portfolio: {description_data.get('project_name', 'New Portfolio')}"
-        thread = threading.Thread(target=run_git_push, args=(commit_message,))
-        thread.start()
-        message += " (正在背景模擬上傳到 GitHub...)"
-
-    return jsonify({'success': success, 'message': message})
+    return jsonify({'success': False, 'message': 'Demo: 此功能在演示模式中不可操作'})
 
 @app.route('/api/portfolio/update', methods=['POST']) 
 @login_required
 def update_portfolio():
-    folder_name = request.form.get('folder_name')
-    if not folder_name:
-        return jsonify({'success': False, 'message': '缺少作品集資料夾名稱 (folder_name)'})
-    update_data = {
-        "project_name": request.form.get("project_name", ""),
-        "description": request.form.get("description", ""),
-        "area": request.form.get("area", ""),
-        "date": request.form.get("date", ""),
-        "size": request.form.get("size", ""),
-        "type": request.form.get("type", "")
-    }
-
-    image_replace_success = True
-    image_replace_message = ""
-    images_replaced = False
-    
-    if 'images' in request.files:
-        uploaded_files = request.files.getlist('images')
-        valid_files = [f for f in uploaded_files if f and f.filename != '' and (f.filename.lower().endswith('.jpg') or f.filename.lower().endswith('.webp'))]
-        if valid_files: 
-            images_replaced = True
-            print(f"Demo: Replacing images for {folder_name}...")
-            image_replace_success, image_replace_message = PortfolioManagerDemo.replace_portfolio_images(folder_name, valid_files)
-            if not image_replace_success:
-                 print(f"Demo: Image replacement failed for {folder_name}: {image_replace_message}")
-        else:
-            print(f"Demo: No valid new image files provided for replacement in {folder_name}.")
-
-    desc_update_success, desc_update_message = PortfolioManagerDemo.update_description_entry(folder_name, update_data)
-
-    final_success = desc_update_success 
-    final_message = desc_update_message
-    if image_replace_message: 
-        final_message += f" 圖片替換狀態: {image_replace_message}"
-
-    if desc_update_success or (images_replaced and image_replace_success):
-         commit_message = f"Demo: Update portfolio: {folder_name} ({update_data.get('project_name', '')})"
-         thread = threading.Thread(target=run_git_push, args=(commit_message,))
-         thread.start()
-         final_message += " (正在背景模擬上傳到 GitHub...)"
-
-    return jsonify({'success': final_success, 'message': final_message})
+    return jsonify({'success': False, 'message': 'Demo: 此功能在演示模式中不可操作'})
 
 @app.route('/api/portfolio/delete', methods=['POST'])
 @login_required
 def delete_portfolio():
-    data = request.json
-    folder_name = data.get('folder_name')
-    if not folder_name:
-        return jsonify({'success': False, 'message': '缺少作品集資料夾名稱'})
-        
-    success, message = PortfolioManagerDemo.delete_portfolio(folder_name)
-
-    if success:
-        commit_message = f"Demo: Delete portfolio: {folder_name}"
-        thread = threading.Thread(target=run_git_push, args=(commit_message,))
-        thread.start()
-        message += " (正在背景模擬上傳到 GitHub...)" 
-
-    return jsonify({'success': success, 'message': message})
+    return jsonify({'success': False, 'message': 'Demo: 此功能在演示模式中不可操作'})
 
 # --- Git API Routes (Demo) ---
 @app.route('/api/git/clone', methods=['POST'])
 @login_required
 def git_clone():
-    try:
-        success, message = GitOperationsDemo.clone()
-        return jsonify({'success': success, 'message': message})
-    except Exception as e:
-        return jsonify({'success': False, 'message': str(e)})
+    return jsonify({'success': False, 'message': 'Demo: 此功能在演示模式中不可操作'})
 
 @app.route('/api/git/pull', methods=['POST'])
 @login_required
 def git_pull():
-    try:
-        success, message = GitOperationsDemo.pull()
-        return jsonify({'success': success, 'message': message})
-    except Exception as e:
-        return jsonify({'success': False, 'message': str(e)})
+    return jsonify({'success': False, 'message': 'Demo: 此功能在演示模式中不可操作'})
 
 @app.route('/api/git/add', methods=['POST'])
 @login_required
 def git_add():
-    try:
-        data = request.json
-        files = data.get('files', '.')
-        success, message = GitOperationsDemo.add(files)
-        return jsonify({'success': success, 'message': message})
-    except Exception as e:
-        return jsonify({'success': False, 'message': str(e)})
+    return jsonify({'success': False, 'message': 'Demo: 此功能在演示模式中不可操作'})
 
 @app.route('/api/git/commit', methods=['POST'])
 @login_required
 def git_commit():
-    try:
-        data = request.json
-        message = data.get('message', '')
-        if not message:
-            return jsonify({'success': False, 'message': '請輸入 commit 訊息'})
-        success, message = GitOperationsDemo.commit(message)
-        return jsonify({'success': success, 'message': message})
-    except Exception as e:
-        return jsonify({'success': False, 'message': str(e)})
+    return jsonify({'success': False, 'message': 'Demo: 此功能在演示模式中不可操作'})
 
 @app.route('/api/git/push', methods=['POST'])
 @login_required
 def git_push():
-    try:
-        success, message = GitOperationsDemo.push()
-        return jsonify({'success': success, 'message': message})
-    except Exception as e:
-        return jsonify({'success': False, 'message': str(e)})
+    return jsonify({'success': False, 'message': 'Demo: 此功能在演示模式中不可操作'})
 
 if __name__ == '__main__':
-    port = int(os.environ.get('PORT', 5000))
+    port = int(os.environ.get('PORT', 30678))
     print(f"Demo: Starting demo server on port {port}")
     print("Demo: Login with password: demo123")
     app.run(host='0.0.0.0', port=port, debug=True) 
