@@ -27,14 +27,9 @@ COPY . .
 # Make port 30678 available to the world outside this container
 EXPOSE 8080
 
-# Define environment variable for the GitHub token (must be provided at runtime)
-# We don't set a default value here to avoid leaking it if not provided.
-# The application's load_dotenv() will handle it if .env exists locally, 
-# but in Docker, it should rely on the runtime environment variable.
-ENV GITHUB_TOKEN=dummy_token_placeholder 
-# Note: The application code (git_operations.py) reads GITHUB_TOKEN via os.getenv.
-# When running the container, use `docker run -e GITHUB_TOKEN="your_actual_token" ...`
+# Define environment variable for demo mode
+ENV ADMIN_PASSWORD=demo123
+ENV SECRET_KEY=demo-secret-key
 
-# Run app.py when the container launches
-# The app itself handles cloning the repo if needed on startup.
-CMD ["python", "app.py"]
+# Run app_demo.py when the container launches (Demo version)
+CMD ["python", "app_demo.py"]
