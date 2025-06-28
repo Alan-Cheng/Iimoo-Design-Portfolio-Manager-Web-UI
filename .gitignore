@@ -1,3 +1,5 @@
 .env
 resources/*
 !resources/.gitkeep
+!resources/demo-portfolio/
+!resources/demo-portfolio/*
