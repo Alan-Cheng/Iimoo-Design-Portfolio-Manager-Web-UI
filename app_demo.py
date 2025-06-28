@@ -180,7 +180,7 @@ if __name__ == '__main__':
     print("Demo: Initializing demo structure...")
     PortfolioManagerDemo._ensure_demo_structure()
     
-    port = int(os.environ.get('PORT', 30678))
+    port = int(os.environ.get('PORT', 8080))
     print(f"Demo: Starting demo server on port {port}")
     print("Demo: Login with password: demo123")
     app.run(host='0.0.0.0', port=port, debug=True) 
