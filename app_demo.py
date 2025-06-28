@@ -176,7 +176,11 @@ def git_push():
     return jsonify({'success': False, 'message': 'Demo: 此功能在演示模式中不可操作'})
 
 if __name__ == '__main__':
-    port = int(os.environ.get('PORT', 8080))
+    # Ensure demo structure is created on startup
+    print("Demo: Initializing demo structure...")
+    PortfolioManagerDemo._ensure_demo_structure()
+    
+    port = int(os.environ.get('PORT', 30678))
     print(f"Demo: Starting demo server on port {port}")
     print("Demo: Login with password: demo123")
     app.run(host='0.0.0.0', port=port, debug=True) 

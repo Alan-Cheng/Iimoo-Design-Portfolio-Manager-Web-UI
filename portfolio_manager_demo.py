@@ -38,6 +38,7 @@ class PortfolioManagerDemo:
     @classmethod
     def _ensure_demo_structure(cls):
         """Ensure demo directory structure exists"""
+        print(f"Demo: Creating demo structure at {cls.PORTFOLIO_DIR}")
         if not os.path.exists(cls.PORTFOLIO_DIR):
             os.makedirs(cls.PORTFOLIO_DIR)
             
@@ -57,6 +58,7 @@ class PortfolioManagerDemo:
                     img_path = os.path.join(portfolio_path, img)
                     with open(img_path, 'w') as f:
                         f.write("Demo image file")
+                print(f"Demo: Created portfolio {portfolio['folder_name']}")
 
     @classmethod
     def get_portfolio_items(cls) -> List[Dict]:
@@ -222,4 +224,7 @@ class PortfolioManagerDemo:
             return True, f"Demo: 成功刪除作品集 '{folder_name}'"
             
         except Exception as e:
-            return False, f"Demo: 刪除作品集時發生錯誤: {str(e)}" 
+            return False, f"Demo: 刪除作品集時發生錯誤: {str(e)}"
+
+# Initialize demo structure when module is imported
+PortfolioManagerDemo._ensure_demo_structure() 
